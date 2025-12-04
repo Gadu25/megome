@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+	"megome/internal/services/auth"
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 	"net/http"
@@ -38,12 +39,19 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("user with email %s already exists", payload.Email))
 		return
 	}
+
 	// if it doesn't we create user
+	hashedPassword, err := auth.HashedPassword(payload.Password)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
 	err = h.store.CreateUser(types.User{
 		FirstName: payload.FirstName,
 		LastName:  payload.LastName,
 		Email:     payload.Email,
-		Password:  payload.Password,
+		Password:  hashedPassword,
 	})
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)

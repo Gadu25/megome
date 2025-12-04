@@ -15,16 +15,16 @@ type Config struct {
 	DBName     string
 }
 
-var Envs = initConfig()
+var Envs Config
 
 func initConfig() Config {
 	return Config{
 		PublicHost: getEnv("PUBLIC_HOST", "http://localhost"),
-		Port:       getEnv("PORT", "8080"),
+		Port:       getEnv("PORT", "3306"),
 		DBUser:     getEnv("DB_USER", "root"),
 		DBPassword: getEnv("DB_PASSWORD", ""),
 		DBAddress:  fmt.Sprintf("%s:%s", getEnv("DB_HOST", "127.0.0.1"), getEnv("DB_PORT", "3306")),
-		DBName:     getEnv("DB_NAME", "ecom"),
+		DBName:     getEnv("DB_NAME", "megome"),
 	}
 }
 
@@ -34,4 +34,8 @@ func getEnv(key, fallback string) string {
 	}
 
 	return fallback
+}
+
+func Load() {
+	Envs = initConfig()
 }

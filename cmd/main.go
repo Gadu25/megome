@@ -6,7 +6,6 @@ import (
 	"megome/cmd/api"
 	"megome/config"
 	"megome/internal/data/db"
-	"os"
 
 	"github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
@@ -15,7 +14,6 @@ import (
 func main() {
 	godotenv.Load()
 	config.Load()
-	log.Println("DB_PASSWORD =", os.Getenv("DB_PASSWORD"))
 
 	db, err := db.NewMySQLStorage(mysql.Config{
 		User:                 config.Envs.DBUser,

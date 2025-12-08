@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS skills (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  userId INT UNSIGNED NOT NULL,
+  skillName VARCHAR(255) NOT NULL,
+  proficiency ENUM('Beginner', 'Intermediate', 'Advanced', 'Expert') DEFAULT 'Beginner',
+  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (id),
+  FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+);

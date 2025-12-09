@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+	"megome/config"
 	"megome/internal/services/auth"
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
@@ -48,7 +49,12 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Not found, invalid email or password"))
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"token": "test"})
+	secret := []byte(config.Envs.JWTSecret)
+	token, err := auth.CreateJWT(secret, u.ID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"token": token})
 }
 
 func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {

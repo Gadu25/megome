@@ -27,6 +27,22 @@ type RegisterUserPayload struct {
 }
 
 type LoginUserPayload struct {
-	Email     string `json:"email" validate:"required,email"`
-	Password  string `json:"password" validate:"required"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required"`
+}
+
+type ProfileStore interface {
+	GetProfile() ([]Profile, error)
+}
+
+type Profile struct {
+	ID           int    `json:"id"`
+	UserID       int    `json:"userId"`
+	Bio          string `json:"bio"`
+	Phone        string `json:"phone"`
+	Website      string `json:"website"`
+	Location     string `json:"location"`
+	ProfileImage string `json:"profileImage"`
+	CreatedAt    string `json:"createdAt`
+	UpdatedAt    string `json:"updatedAt`
 }

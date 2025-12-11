@@ -5,6 +5,7 @@ import (
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -24,7 +25,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 }
 
 func (h *Handler) handleViewProfiles(w http.ResponseWriter, r *http.Request) {
-	// userID := auth.GetUserIDFromContext(r.Context())
-	// utils.WriteJSON(w, http.StatusOK, map[string]string{"userId": strconv.Itoa(userID)})
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"userId": "testing"})
+	userID := auth.GetUserIDFromContext(r.Context())
+	utils.WriteJSON(w, http.StatusOK, map[string]string{"userId": strconv.Itoa(userID)})
+	// utils.WriteJSON(w, http.StatusOK, map[string]string{"userId": "testing"})
 }

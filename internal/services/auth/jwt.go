@@ -53,7 +53,7 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, store types.UserStore) http.Handl
 
 		// if we need to fetch the userID from the DB (id from the token)
 		claims := token.Claims.(jwt.MapClaims)
-		str := claims["userID"].(string)
+		str := claims["userId"].(string)
 
 		userID, err := strconv.Atoi(str)
 

@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"log"
+	"megome/internal/services/profile"
 	"megome/internal/services/user"
 	"net/http"
 
@@ -28,6 +29,10 @@ func (s *APIServer) Run() error {
 	userStore := user.NewStore(s.db)
 	userHandler := user.NewHandler(userStore)
 	userHandler.RegisterRoutes(subrouter)
+
+	profileStore := profile.NewStore(s.db)
+	profileHandler := profile.NewHandler(profileStore, userStore)
+	profileHandler.RegisterRoutes(subrouter)
 
 	log.Println("Listening on", s.addr)
 	return http.ListenAndServe(s.addr, router)

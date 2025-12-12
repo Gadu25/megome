@@ -32,7 +32,7 @@ type LoginUserPayload struct {
 }
 
 type ProfileStore interface {
-	GetProfile(userId int) ([]Profile, error)
+	GetProfile(userId int) (*Profile, error)
 }
 
 type Profile struct {

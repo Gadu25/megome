@@ -13,19 +13,29 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) GetProfile(userId int) ([]types.Profile, error) {
-	_, err := s.db.Query("SELECT * FROM profiles WHERE userId = ?", userId)
+func (s *Store) GetProfile(userId int) (*types.Profile, error) {
+	row := s.db.QueryRow("SELECT * FROM profiles WHERE userId = ? LIMIT 1", userId)
+	return scanRowIntoProfile(row)
+}
+
+func scanRowIntoProfile(row *sql.Row) (*types.Profile, error) {
+	profile := new(types.Profile)
+
+	err := row.Scan(
+		&profile.ID,
+		&profile.UserID,
+		&profile.Bio,
+		&profile.Phone,
+		&profile.Website,
+		&profile.Location,
+		&profile.ProfileImage,
+		&profile.CreatedAt,
+		&profile.UpdatedAt,
+	)
+
 	if err != nil {
 		return nil, err
 	}
 
-	// p := new(types.Profile)
-	// for rows.Next() {
-	// 	p, err = scanRowIntoProfile(rows)
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-	// }
-
-	return nil, nil
+	return profile, nil
 }

@@ -55,3 +55,27 @@ type MakeProfilePayload struct {
 	Location     string `json:"location"`
 	ProfileImage string `json:"profileImage"`
 }
+
+type ExperienceStore interface {
+	CreateExperience(Experience) error
+}
+
+type Experience struct {
+	ID          int    `json:"id"`
+	UserID      int    `json:"userId"`
+	Title       string `json:"title"`
+	Company     string `json:"company"`
+	StartDate   string `json:startDate"`
+	EndDate     string `json:"endDate"`
+	Description string `json:"description"`
+	CreatedAt   string `json:"createdAt`
+	UpdatedAt   string `json:"updatedAt`
+}
+
+type ExperiencePayload struct {
+	Title       string `json:"title" validate:"required"`
+	Company     string `json:"company" validate:"required"`
+	StartDate   string `json:startDate" validate:"required"`
+	EndDate     string `json:"endDate"`
+	Description string `json:"description"`
+}

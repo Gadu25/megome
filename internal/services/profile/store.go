@@ -18,6 +18,40 @@ func (s *Store) GetProfile(userId int) (*types.Profile, error) {
 	return scanRowIntoProfile(row)
 }
 
+func (s *Store) MakeProfile(profile types.Profile) error {
+	existing, err := s.GetProfile(profile.UserID)
+	if err != nil {
+		return err
+	}
+	if existing != nil {
+		_, err = s.db.Exec("UPDATE profiles SET bio = ?, phone = ?, website = ?, location = ?, profileImage = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?",
+			profile.Bio,
+			profile.Phone,
+			profile.Website,
+			profile.Location,
+			profile.ProfileImage,
+			profile.UserID,
+		)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	_, err = s.db.Exec("INSERT INTO profiles (userId, bio, phone, website, location, profileImage) VALUES (?, ?, ?, ?, ?, ?)",
+		profile.UserID,
+		profile.Bio,
+		profile.Phone,
+		profile.Website,
+		profile.Location,
+		profile.ProfileImage,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func scanRowIntoProfile(row *sql.Row) (*types.Profile, error) {
 	profile := new(types.Profile)
 

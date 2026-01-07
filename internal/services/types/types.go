@@ -33,11 +33,12 @@ type LoginUserPayload struct {
 
 type ProfileStore interface {
 	GetProfile(userId int) (*Profile, error)
+	MakeProfile(Profile) error
 }
 
 type Profile struct {
 	ID           int    `json:"id"`
-	UserID       int    `json:"userId"`
+	UserID       int    `json:"userId`
 	Bio          string `json:"bio"`
 	Phone        string `json:"phone"`
 	Website      string `json:"website"`
@@ -45,4 +46,12 @@ type Profile struct {
 	ProfileImage string `json:"profileImage"`
 	CreatedAt    string `json:"createdAt`
 	UpdatedAt    string `json:"updatedAt`
+}
+
+type MakeProfilePayload struct {
+	Bio          string `json:"bio"`
+	Phone        string `json:"phone"`
+	Website      string `json:"website"`
+	Location     string `json:"location"`
+	ProfileImage string `json:"profileImage"`
 }

@@ -5,6 +5,7 @@ import (
 	"log"
 	"megome/internal/services/experience"
 	"megome/internal/services/profile"
+	"megome/internal/services/skill"
 	"megome/internal/services/user"
 	"net/http"
 
@@ -38,6 +39,10 @@ func (s *APIServer) Run() error {
 	experienceStore := experience.NewStore(s.db)
 	experienceHandler := experience.NewHandler(experienceStore, userStore)
 	experienceHandler.RegisterRoutes(subrouter)
+
+	skillStore := skill.NewStore(s.db)
+	skillHandler := skill.NewHandler(skillStore, userStore)
+	skillHandler.RegisterRoutes(subrouter)
 
 	log.Println("Listening on", s.addr)
 	return http.ListenAndServe(s.addr, router)

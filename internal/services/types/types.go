@@ -82,3 +82,20 @@ type ExperiencePayload struct {
 	EndDate     *string `json:"endDate"`
 	Description string  `json:"description"`
 }
+
+type SkillStore interface {
+}
+
+type Skill struct {
+	ID          int    `json:"id"`
+	UserID      int    `json:"userId"`
+	SkillName   int    `json:"skillName"`
+	Proficiency string `json:"proficiency"`
+	CreatedAt   string `json:"createdAt"`
+	UpdatedAt   string `json:"updatedAt"`
+}
+
+type SkillPayload struct {
+	SkillName   int    `json:"skillName" validate:"required"`
+	Proficiency string `json:"proficiency"`
+}

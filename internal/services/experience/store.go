@@ -13,6 +13,26 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
+func (s *Store) GetExperienceById(id int) (*types.Experience, error) {
+	row := s.db.QueryRow("SELECT * FROM experiences WHERE id = ?", id)
+	experience := new(types.Experience)
+	err := row.Scan(
+		&experience.ID,
+		&experience.UserID,
+		&experience.Title,
+		&experience.Company,
+		&experience.StartDate,
+		&experience.EndDate,
+		&experience.Description,
+		&experience.CreatedAt,
+		&experience.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return experience, nil
+}
+
 func (s *Store) GetExperiences(userID int) ([]types.Experience, error) {
 	rows, err := s.db.Query(
 		"SELECT id, userId, title, company, startDate, endDate, description, createdAt, updatedAt FROM experiences WHERE userId = ?",
@@ -71,7 +91,11 @@ func (s *Store) UpdateExperience(id int, experience types.Experience) error {
 }
 
 func (s *Store) DeleteExperience(id int) error {
-	_, err := s.db.Exec("DELETE FROM experiences WHERE id = ?", id)
+	_, err := s.GetExperienceById(id)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec("DELETE FROM experiences WHERE id = ?", id)
 	if err != nil {
 		return err
 	}

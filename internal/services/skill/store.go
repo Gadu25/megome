@@ -13,6 +13,23 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
+func (s *Store) GetSkillById(id int) (*types.Skill, error) {
+	row := s.db.QueryRow("SELECT * FROM skills WHERE id = ?", id)
+	skill := new(types.Skill)
+	err := row.Scan(
+		&skill.ID,
+		&skill.UserID,
+		&skill.SkillName,
+		&skill.Proficiency,
+		&skill.CreatedAt,
+		&skill.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return skill, nil
+}
+
 func (s *Store) GetSkills(userID int) ([]types.Skill, error) {
 	rows, err := s.db.Query(
 		"SELECT * FROM skills WHERE userId = ?",
@@ -65,7 +82,11 @@ func (s *Store) UpdateSkill(id int, skill types.Skill) error {
 }
 
 func (s *Store) DeleteSkill(id int) error {
-	_, err := s.db.Exec("DELETE FROM skills WHERE id = ?", id)
+	_, err := s.GetSkillById(id)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Exec("DELETE FROM skills WHERE id = ?", id)
 	if err != nil {
 		return err
 	}

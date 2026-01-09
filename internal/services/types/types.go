@@ -84,18 +84,22 @@ type ExperiencePayload struct {
 }
 
 type SkillStore interface {
+	GetSkills(userId int) ([]Skill, error)
+	CreateSkill(Skill) error
+	UpdateSkill(id int, Skill Skill) error
+	DeleteSkill(id int) error
 }
 
 type Skill struct {
 	ID          int    `json:"id"`
 	UserID      int    `json:"userId"`
-	SkillName   int    `json:"skillName"`
+	SkillName   string `json:"skillName"`
 	Proficiency string `json:"proficiency"`
 	CreatedAt   string `json:"createdAt"`
 	UpdatedAt   string `json:"updatedAt"`
 }
 
 type SkillPayload struct {
-	SkillName   int    `json:"skillName" validate:"required"`
+	SkillName   string `json:"skillName" validate:"required"`
 	Proficiency string `json:"proficiency"`
 }

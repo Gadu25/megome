@@ -6,7 +6,6 @@ import (
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 	"net/http"
-	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -97,16 +96,12 @@ func (h *Handler) handleEditExperience(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// update experience
-	vars := mux.Vars(r)
-	idStr := vars["id"]
-	id, err := strconv.Atoi(idStr)
+	id, err := utils.GetRequestId(r)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	userID := auth.GetUserIDFromContext(r.Context())
 	err = h.experienceStore.UpdateExperience(id, types.Experience{
-		UserID:      userID,
 		Title:       payload.Title,
 		Company:     payload.Company,
 		StartDate:   payload.StartDate,
@@ -121,9 +116,7 @@ func (h *Handler) handleEditExperience(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleDeleteExperience(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	idStr := vars["id"]
-	id, err := strconv.Atoi(idStr)
+	id, err := utils.GetRequestId(r)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return

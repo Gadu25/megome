@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
 )
 
 var Validate = validator.New()
@@ -25,4 +27,10 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 
 func WriteError(w http.ResponseWriter, status int, err error) {
 	WriteJSON(w, status, map[string]string{"error": err.Error()})
+}
+
+func GetRequestId(r *http.Request) (int, error) {
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+	return strconv.Atoi(idStr)
 }

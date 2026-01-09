@@ -56,8 +56,7 @@ func (s *Store) CreateExperience(experience types.Experience) error {
 }
 
 func (s *Store) UpdateExperience(id int, experience types.Experience) error {
-	_, err := s.db.Exec("UPDATE experiences SET userId = ?, title = ?, company = ?, startDate = ?, endDate = ?, description = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
-		experience.UserID,
+	_, err := s.db.Exec("UPDATE experiences SET title = ?, company = ?, startDate = ?, endDate = ?, description = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
 		experience.Title,
 		experience.Company,
 		experience.StartDate,

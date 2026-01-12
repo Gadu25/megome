@@ -3,6 +3,7 @@ package api
 import (
 	"database/sql"
 	"log"
+	"megome/internal/services/education"
 	"megome/internal/services/experience"
 	"megome/internal/services/profile"
 	"megome/internal/services/skill"
@@ -43,6 +44,10 @@ func (s *APIServer) Run() error {
 	skillStore := skill.NewStore(s.db)
 	skillHandler := skill.NewHandler(skillStore, userStore)
 	skillHandler.RegisterRoutes(subrouter)
+
+	educationStore := education.NewStore(s.db)
+	educationHandler := education.NewHandler(educationStore, userStore)
+	educationHandler.RegisterRoutes(subrouter)
 
 	log.Println("Listening on", s.addr)
 	return http.ListenAndServe(s.addr, router)

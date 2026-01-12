@@ -38,14 +38,14 @@ type ProfileStore interface {
 
 type Profile struct {
 	ID           int    `json:"id"`
-	UserID       int    `json:"userId`
+	UserID       int    `json:"userId"`
 	Bio          string `json:"bio"`
 	Phone        string `json:"phone"`
 	Website      string `json:"website"`
 	Location     string `json:"location"`
 	ProfileImage string `json:"profileImage"`
-	CreatedAt    string `json:"createdAt`
-	UpdatedAt    string `json:"updatedAt`
+	CreatedAt    string `json:"createdAt"`
+	UpdatedAt    string `json:"updatedAt"`
 }
 
 type MakeProfilePayload struct {
@@ -102,4 +102,31 @@ type Skill struct {
 type SkillPayload struct {
 	SkillName   string `json:"skillName" validate:"required"`
 	Proficiency string `json:"proficiency"`
+}
+
+type EducationStore interface {
+	GetEducations(userId int) ([]Education, error)
+	CreateEducation(Education) error
+	UpdateEducation(id int, education Education) error
+	DeleteEducation(id int) error
+}
+
+type Education struct {
+	ID           int    `json:"id"`
+	UserID       int    `json:"userId"`
+	School       string `json:"school"`
+	Degree       string `json:"degree"`
+	FieldOfStudy string `json:"fieldOfStudy"`
+	StartDate    string `json:"startDate"`
+	EndDate      string `json:"endDate"`
+	CreatedAt    string `json:"createdAt"`
+	UpdatedAt    string `json:"updatedAt"`
+}
+
+type EducationPayload struct {
+	School       string `json:"school" validate:"required"`
+	Degree       string `json:"degree"`
+	FieldOfStudy string `json:"fieldOfStudy"`
+	StartDate    string `json:"startDate"`
+	EndDate      string `json:"endDate"`
 }

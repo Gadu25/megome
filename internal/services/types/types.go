@@ -159,3 +159,18 @@ type CertificationPayload struct {
 	CredentialId   *string `json:"credentialId"`
 	CredentialUrl  *string `json:"credentialUrl"`
 }
+
+type ProjectTechStore interface {
+}
+
+type ProjectTech struct {
+	ID        int    `json:"id"`
+	ProjectID int    `json:"projectId"`
+	TechName  string `json:"techName"`
+	CreatedAt string `json:"createdAt"`
+}
+
+type ProjectTechPayload struct {
+	ProjectID int    `json:"projectId"`
+	TechName  string `json:"techName"`
+}

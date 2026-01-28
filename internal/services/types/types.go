@@ -160,7 +160,26 @@ type CertificationPayload struct {
 	CredentialUrl  *string `json:"credentialUrl"`
 }
 
+type TechnologyStore interface {
+}
+
+type Technology struct {
+	ID        int    `json:"id"`
+	UserID    int    `json:"userId"`
+	Name      string `json:"name"`
+	Slug      string `json:"slug"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
+}
+
+type TechnologyPayload struct {
+	Name string `json:"name"`
+	Slug string `json:"slug"`
+}
+
 type ProjectTechStore interface {
+	GetProjectTech(userId int) ([]ProjectTech, error)
+	CreateProjectTech(ProjectTech) error
 }
 
 type ProjectTech struct {

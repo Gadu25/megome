@@ -181,6 +181,25 @@ type TechnologyPayload struct {
 	Slug string `json:"slug"`
 }
 
+type ProjectStore interface {
+}
+
+type Project struct {
+	ID          string `json:"id"`
+	UserID      int    `json:"userId"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Link        string `json:"link"`
+	GithubLink  string `json:"githubLink"`
+}
+
+type ProjectPayload struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Link        string `json:"link"`
+	GithubLink  string `json:"githubLink"`
+}
+
 type ProjectTechStore interface {
 	GetProjectTech(userId int) ([]ProjectTech, error)
 	CreateProjectTech(ProjectTech) error

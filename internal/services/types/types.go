@@ -182,10 +182,14 @@ type TechnologyPayload struct {
 }
 
 type ProjectStore interface {
+	GetProjects(int) ([]Project, error)
+	CreateProject(Project) error
+	UpdateProject(int, Project) error
+	DeleteProject(int) error
 }
 
 type Project struct {
-	ID          string `json:"id"`
+	ID          int    `json:"id"`
 	UserID      int    `json:"userId"`
 	Title       string `json:"title"`
 	Description string `json:"description"`

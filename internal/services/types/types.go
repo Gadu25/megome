@@ -205,18 +205,18 @@ type ProjectPayload struct {
 }
 
 type ProjectTechStore interface {
-	GetProjectTech(userId int) ([]ProjectTech, error)
 	CreateProjectTech(ProjectTech) error
+	DelteProjectTech(int) error
 }
 
 type ProjectTech struct {
 	ID        int    `json:"id"`
 	ProjectID int    `json:"projectId"`
-	TechName  string `json:"techName"`
+	TechID    int    `json:"techId"`
 	CreatedAt string `json:"createdAt"`
 }
 
 type ProjectTechPayload struct {
-	ProjectID int    `json:"projectId"`
-	TechName  string `json:"techName"`
+	ProjectID int `json:"projectId"`
+	TechID    int `json:"techId"`
 }

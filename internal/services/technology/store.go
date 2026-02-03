@@ -31,7 +31,7 @@ func (s *Store) GetTechnologyById(id int) (*types.Technology, error) {
 
 func (s *Store) GetTechnologies(userID int) ([]types.Technology, error) {
 	rows, err := s.db.Query(
-		"SELECT id, name, slug, createdAt, updatedAt FROM technologies WHERE userId = ?", userID,
+		"SELECT id, userId, name, slug, createdAt, updatedAt FROM technologies WHERE userId = ?", userID,
 	)
 	if err != nil {
 		return nil, err
@@ -90,6 +90,7 @@ func scanRowIntoTechnology(rows *sql.Rows) (types.Technology, error) {
 
 	err := rows.Scan(
 		&technology.ID,
+		&technology.UserID,
 		&technology.Name,
 		&technology.Slug,
 		&technology.CreatedAt,

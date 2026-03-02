@@ -1,4 +1,4 @@
-package auth
+package refreshToken
 
 import (
 	"crypto/sha256"
@@ -33,7 +33,7 @@ func (s *Store) CreateRefreshToken(userId int) (string, error) {
 	// up to three tries if ever generated hash was not unique (very small chance to happen)
 	for i := 0; i < 2; i++ {
 		token, err := generateRandomToken()
-		if err == nil {
+		if err != nil {
 			return "", err
 		}
 
@@ -64,7 +64,7 @@ func (s *Store) CreateRefreshToken(userId int) (string, error) {
 	return "", errors.New("failed to generate unique refresh token")
 }
 
-func (s *Store) RefreshRotation(token string, userId int) (string, error) {
+func (s *Store) RefreshRotation(token string) (string, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return "", err
@@ -74,9 +74,8 @@ func (s *Store) RefreshRotation(token string, userId int) (string, error) {
 	hash := sha256.Sum256([]byte(token))
 	hashStr := fmt.Sprintf("%x", hash)
 
-	row := tx.QueryRow("SELECT id, userId, tokenHash expiresAt, revokedAt FROM refresh_tokens WHERE token = ? AND userId = ?",
+	row := tx.QueryRow("SELECT id, userId, tokenHash, expiresAt, revokedAt FROM refresh_tokens WHERE tokenHash = ?",
 		hashStr,
-		userId,
 	)
 
 	var refreshToken types.RefreshToken
@@ -108,7 +107,7 @@ func (s *Store) RefreshRotation(token string, userId int) (string, error) {
 		return "", err
 	}
 
-	newToken, err := s.CreateRefreshToken(userId)
+	newToken, err := s.CreateRefreshToken(refreshToken.UserId)
 	if err != nil {
 		return "", err
 	}

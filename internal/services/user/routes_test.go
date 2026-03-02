@@ -15,7 +15,8 @@ import (
 
 func TestUserServiceHandlers(t *testing.T) {
 	userStore := &mockUserStore{}
-	handler := NewHandler(userStore)
+	refreshStore := &mockRefreshStore{}
+	handler := NewHandler(userStore, refreshStore)
 
 	t.Run("should fail if the user payload is invalid", func(t *testing.T) {
 		payload := types.RegisterUserPayload{
@@ -78,6 +79,16 @@ func (m *mockUserStore) GetUserByID(id int) (*types.User, error) {
 	return nil, nil
 }
 
-func (m *mockUserStore) CreateUser(types.User) error {
-	return nil
+func (m *mockUserStore) CreateUser(types.User) (*types.User, error) {
+	return nil, nil
+}
+
+type mockRefreshStore struct{}
+
+func (m *mockRefreshStore) CreateRefreshToken(userId int) (string, error) {
+	return "", nil
+}
+
+func (m *mockRefreshStore) RefreshRotation(token string) (string, error) {
+	return "", nil
 }

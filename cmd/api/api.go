@@ -9,6 +9,7 @@ import (
 	"megome/internal/services/profile"
 	"megome/internal/services/project"
 	projecttech "megome/internal/services/projectTech"
+	"megome/internal/services/refreshToken"
 	"megome/internal/services/skill"
 	"megome/internal/services/technology"
 	"megome/internal/services/user"
@@ -33,8 +34,10 @@ func (s *APIServer) Run() error {
 	router := mux.NewRouter()
 	subrouter := router.PathPrefix("/api/v1").Subrouter()
 
+	refreshStore := refreshToken.NewStore(s.db)
+
 	userStore := user.NewStore(s.db)
-	userHandler := user.NewHandler(userStore)
+	userHandler := user.NewHandler(userStore, refreshStore)
 	userHandler.RegisterRoutes(subrouter)
 
 	profileStore := profile.NewStore(s.db)

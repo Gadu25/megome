@@ -15,10 +15,15 @@ type RefreshToken struct {
 	UpdatedAt string       `json:"updatedAt"`
 }
 
+type RefreshTokenStore interface {
+	CreateRefreshToken(userId int) (string, error)
+	RefreshRotation(token string) (string, error)
+}
+
 type UserStore interface {
 	GetUserByEmail(email string) (*User, error)
 	GetUserByID(id int) (*User, error)
-	CreateUser(User) error
+	CreateUser(User) (*User, error)
 }
 
 type User struct {

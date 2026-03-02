@@ -1,8 +1,19 @@
 package types
 
 import (
+	"database/sql"
 	"time"
 )
+
+type RefreshToken struct {
+	ID        int          `json:"id"`
+	UserId    int          `json:"userId"`
+	TokenHash string       `json:"tokenHash"`
+	ExpiresAt time.Time    `json:"expiresAt"`
+	RevokedAt sql.NullTime `json:"revokedAt"`
+	CreatedAt string       `json:"createdAt"`
+	UpdatedAt string       `json:"updatedAt"`
+}
 
 type UserStore interface {
 	GetUserByEmail(email string) (*User, error)

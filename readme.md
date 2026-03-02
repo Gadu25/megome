@@ -93,7 +93,8 @@ Ensure Go is installed:
       go version
 
 ### 2. Install golang-migrate CLI (MySQL support)
-      go install -tags 'mysql' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+     go install github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+      export PATH=$PATH:$HOME/go/bin
 
       migrate -version
 

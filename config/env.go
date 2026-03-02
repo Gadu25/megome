@@ -28,7 +28,7 @@ func initConfig() Config {
 		DBPassword:             getEnv("DB_PASSWORD", ""),
 		DBAddress:              fmt.Sprintf("%s:%s", getEnv("DB_HOST", "127.0.0.1"), getEnv("DB_PORT", "3306")),
 		DBName:                 getEnv("DB_NAME", "megome"),
-		JWTExpirationInSeconds: getEnvAsInt("JWT_EXP", 3600*24*7),
+		JWTExpirationInSeconds: getEnvAsInt("JWT_EXP", 60*5),
 		JWTSecret:              getEnv("JWT_SECRET", "not-secret-anymore?"),
 	}
 }

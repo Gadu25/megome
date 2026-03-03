@@ -102,7 +102,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	at, rt, err := h.getTokens(user.ID)
 
 	utils.WriteJSON(w, http.StatusCreated, map[string]string{
-		"message":       "You're account is successfully registered!",
+		"message":       "Your account is successfully registered!",
 		"access-token":  at,
 		"refresh-token": rt,
 	})

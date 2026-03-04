@@ -17,7 +17,7 @@ type RefreshToken struct {
 
 type RefreshTokenStore interface {
 	CreateRefreshToken(userId int) (string, error)
-	RefreshRotation(token string) (string, error)
+	RefreshRotation(token string) (string, string, error)
 }
 
 type UserStore interface {

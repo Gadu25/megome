@@ -89,6 +89,6 @@ func (m *mockRefreshStore) CreateRefreshToken(userId int) (string, error) {
 	return "", nil
 }
 
-func (m *mockRefreshStore) RefreshRotation(token string) (string, error) {
-	return "", nil
+func (m *mockRefreshStore) RefreshRotation(token string) (string, string, error) {
+	return "", "", nil
 }

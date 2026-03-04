@@ -7,17 +7,19 @@ import (
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 	"net/http"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 )
 
 type Handler struct {
-	store types.UserStore
+	userStore    types.UserStore
+	refreshStore types.RefreshTokenStore
 }
 
-func NewHandler(store types.UserStore) *Handler {
-	return &Handler{store: store}
+func NewHandler(userStore types.UserStore, refreshStore types.RefreshTokenStore) *Handler {
+	return &Handler{userStore: userStore, refreshStore: refreshStore}
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
@@ -39,7 +41,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := h.store.GetUserByEmail(payload.Email)
+	u, err := h.userStore.GetUserByEmail(payload.Email)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Not found, invalid email or password"))
 		return
@@ -49,14 +51,28 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Not found, invalid email or password"))
 		return
 	}
-	secret := []byte(config.Envs.JWTSecret)
-	token, err := auth.CreateJWT(secret, u.ID)
+
+	at, rt, err := h.getTokens(u.ID)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 	}
+
+	fmt.Println(rt)
+
+	// Set refresh token as HttpOnly cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    rt,
+		HttpOnly: true,
+		Secure:   false, // false only in local dev
+		Path:     "/auth/refresh",
+		SameSite: http.SameSiteStrictMode,
+		Expires:  time.Now().Add(14 * 24 * time.Hour),
+	})
+
 	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "Account was successfully logged in!",
-		"token":   token,
+		"message":      "Account was successfully logged in!",
+		"access-token": at,
 	})
 }
 
@@ -74,7 +90,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// check if the user exists
-	_, err := h.store.GetUserByEmail(payload.Email)
+	_, err := h.userStore.GetUserByEmail(payload.Email)
 	if err == nil {
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("user with email %s already exists", payload.Email))
 		return
@@ -87,7 +103,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.store.CreateUser(types.User{
+	user, err := h.userStore.CreateUser(types.User{
 		FirstName: payload.FirstName,
 		LastName:  payload.LastName,
 		Email:     payload.Email,
@@ -98,7 +114,34 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusCreated, map[string]string{
-		"message": "You're account is successfully registered!",
+	at, rt, err := h.getTokens(user.ID)
+
+	// Set refresh token as HttpOnly cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    rt,
+		HttpOnly: true,
+		Secure:   true, // false only in local dev
+		Path:     "/auth/refresh",
+		SameSite: http.SameSiteStrictMode,
+		Expires:  time.Now().Add(14 * 24 * time.Hour),
 	})
+
+	utils.WriteJSON(w, http.StatusCreated, map[string]string{
+		"message":      "Your account is successfully registered!",
+		"access-token": at,
+	})
+}
+
+func (h *Handler) getTokens(userId int) (string, string, error) {
+	secret := []byte(config.Envs.JWTSecret)
+	accessToken, err := auth.CreateJWT(secret, userId)
+	if err != nil {
+		return "", "", err
+	}
+	refreshToken, err := h.refreshStore.CreateRefreshToken(userId)
+	if err != nil {
+		return "", "", err
+	}
+	return accessToken, refreshToken, nil
 }

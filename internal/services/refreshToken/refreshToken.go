@@ -1,4 +1,4 @@
-package auth
+package refreshToken
 
 import (
 	"crypto/sha256"
@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"megome/config"
+	"megome/internal/services/auth"
 	"megome/internal/services/types"
 	"time"
 
@@ -33,7 +35,7 @@ func (s *Store) CreateRefreshToken(userId int) (string, error) {
 	// up to three tries if ever generated hash was not unique (very small chance to happen)
 	for i := 0; i < 2; i++ {
 		token, err := generateRandomToken()
-		if err == nil {
+		if err != nil {
 			return "", err
 		}
 
@@ -64,60 +66,65 @@ func (s *Store) CreateRefreshToken(userId int) (string, error) {
 	return "", errors.New("failed to generate unique refresh token")
 }
 
-func (s *Store) RefreshRotation(token string, userId int) (string, error) {
+func (s *Store) RefreshRotation(token string) (string, string, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer tx.Rollback()
 
 	hash := sha256.Sum256([]byte(token))
 	hashStr := fmt.Sprintf("%x", hash)
 
-	row := tx.QueryRow("SELECT id, userId, tokenHash expiresAt, revokedAt FROM refresh_tokens WHERE token = ? AND userId = ?",
+	row := tx.QueryRow("SELECT id, userId, tokenHash, expiresAt, revokedAt FROM refresh_tokens WHERE tokenHash = ?",
 		hashStr,
-		userId,
 	)
 
 	var refreshToken types.RefreshToken
 	err = row.Scan(
 		&refreshToken.ID,
-		&refreshToken.TokenHash,
 		&refreshToken.UserId,
+		&refreshToken.TokenHash,
 		&refreshToken.ExpiresAt,
 		&refreshToken.RevokedAt,
 	)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if refreshToken.RevokedAt.Valid {
 		// reuse detected → revoke all sessions
 		tx.Exec("UPDATE refresh_tokens SET revokedAt = NOW() WHERE userId = ?", refreshToken.UserId)
-		return "", errors.New("Refresh token is already revoked")
+		if err := tx.Commit(); err != nil {
+			return "", "", err
+		}
+		return "", "", errors.New("Refresh token is already revoked")
 	}
 
 	if time.Now().After(refreshToken.ExpiresAt) {
-		return "", errors.New("Refresh token is expired")
+		return "", "", errors.New("Refresh token is expired")
 	}
 
 	_, err = tx.Exec("UPDATE refresh_tokens SET revokedAt = NOW(), updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
 		refreshToken.ID,
 	)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	newToken, err := s.CreateRefreshToken(userId)
+	newRefreshToken, err := s.CreateRefreshToken(refreshToken.UserId)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	if err := tx.Commit(); err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return newToken, nil
+	secret := []byte(config.Envs.JWTSecret)
+	newAccessToken, err := auth.CreateJWT(secret, refreshToken.UserId)
+
+	return newRefreshToken, newAccessToken, nil
 }
 
 func isDuplicateKeyError(err error) bool {

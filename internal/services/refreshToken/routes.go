@@ -41,7 +41,7 @@ func (h *Handler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 		Value:    newRefreshToken,
 		HttpOnly: true,
 		Secure:   true, // false only in local dev
-		Path:     "/auth/refresh",
+		Path:     "/api/v1/auth/refresh",
 		SameSite: http.SameSiteStrictMode,
 		Expires:  time.Now().Add(14 * 24 * time.Hour),
 	})

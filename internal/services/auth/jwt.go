@@ -124,7 +124,7 @@ func validateToken(t string) (*Claims, error) {
 }
 
 func permissionDenied(w http.ResponseWriter, m string) {
-	utils.WriteError(w, http.StatusForbidden, fmt.Errorf("permission denied %v", m))
+	utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("permission denied %v", m))
 }
 
 func GetUserIDFromContext(ctx context.Context) int {

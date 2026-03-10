@@ -7,7 +7,6 @@ import (
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 	"net/http"
-	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -60,16 +59,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println(rt)
 
-	// Set refresh token as HttpOnly cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    rt,
-		HttpOnly: true,
-		Secure:   false, // false only in local dev
-		Path:     "/api/v1/auth",
-		SameSite: http.SameSiteStrictMode,
-		Expires:  time.Now().Add(14 * 24 * time.Hour),
-	})
+	utils.SetRefreshTokenCookie(w, rt)
 
 	utils.WriteJSON(w, http.StatusOK, map[string]string{
 		"message":      "Account was successfully logged in!",
@@ -117,16 +107,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	at, rt, err := h.getTokens(user.ID)
 
-	// Set refresh token as HttpOnly cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
-		Value:    rt,
-		HttpOnly: true,
-		Secure:   true, // false only in local dev
-		Path:     "/api/v1/auth",
-		SameSite: http.SameSiteStrictMode,
-		Expires:  time.Now().Add(14 * 24 * time.Hour),
-	})
+	utils.SetRefreshTokenCookie(w, rt)
 
 	utils.WriteJSON(w, http.StatusCreated, map[string]string{
 		"message":      "Your account is successfully registered!",

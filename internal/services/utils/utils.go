@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -33,4 +34,16 @@ func GetRequestId(r *http.Request) (int, error) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 	return strconv.Atoi(idStr)
+}
+
+func SetRefreshTokenCookie(w http.ResponseWriter, token string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    token,
+		HttpOnly: true,
+		Secure:   false, // false only in local dev
+		Path:     "/api/v1/auth",
+		SameSite: http.SameSiteStrictMode,
+		Expires:  time.Now().Add(14 * 24 * time.Hour),
+	})
 }

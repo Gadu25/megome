@@ -92,3 +92,7 @@ func (m *mockRefreshStore) CreateRefreshToken(userId int) (string, error) {
 func (m *mockRefreshStore) RefreshRotation(token string) (string, string, error) {
 	return "", "", nil
 }
+
+func (m *mockRefreshStore) LogoutUser(token string) error {
+	return nil
+}

@@ -127,6 +127,29 @@ func (s *Store) RefreshRotation(token string) (string, string, error) {
 	return newRefreshToken, newAccessToken, nil
 }
 
+func (s *Store) LogoutUser(token string) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	hash := sha256.Sum256([]byte(token))
+	hashStr := fmt.Sprintf("%x", hash)
+
+	_, err = tx.Exec("UPDATE refresh_tokens SET revokedAt = NOW(), updatedAt = CURRENT_TIMESTAMP WHERE tokenHash = ?",
+		hashStr,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func isDuplicateKeyError(err error) bool {
 	var mysqlErr *mysql.MySQLError
 	if errors.As(err, &mysqlErr) {

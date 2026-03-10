@@ -25,6 +25,7 @@ func NewHandler(userStore types.UserStore, refreshStore types.RefreshTokenStore)
 func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/login", h.handleLogin).Methods("POST")
 	router.HandleFunc("/register", h.handleRegister).Methods("POST")
+	router.HandleFunc("/logout", h.handleLogout).Methods("POST")
 }
 
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +66,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		Value:    rt,
 		HttpOnly: true,
 		Secure:   false, // false only in local dev
-		Path:     "/api/v1/auth/refresh",
+		Path:     "/api/v1/auth",
 		SameSite: http.SameSiteStrictMode,
 		Expires:  time.Now().Add(14 * 24 * time.Hour),
 	})
@@ -122,7 +123,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		Value:    rt,
 		HttpOnly: true,
 		Secure:   true, // false only in local dev
-		Path:     "/api/v1/auth/refresh",
+		Path:     "/api/v1/auth",
 		SameSite: http.SameSiteStrictMode,
 		Expires:  time.Now().Add(14 * 24 * time.Hour),
 	})
@@ -130,6 +131,23 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusCreated, map[string]string{
 		"message":      "Your account is successfully registered!",
 		"access-token": at,
+	})
+}
+
+func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("refresh_token")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Error getting cookie %v", err))
+		return
+	}
+
+	err = h.refreshStore.LogoutUser(cookie.Value)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]string{
+		"message": "User successfully logged out!",
 	})
 }
 

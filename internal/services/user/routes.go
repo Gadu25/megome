@@ -22,9 +22,9 @@ func NewHandler(userStore types.UserStore, refreshStore types.RefreshTokenStore)
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/login", h.handleLogin).Methods("POST")
-	router.HandleFunc("/register", h.handleRegister).Methods("POST")
-	router.HandleFunc("/logout", h.handleLogout).Methods("POST")
+	router.HandleFunc("/auth/login", h.handleLogin).Methods("POST")
+	router.HandleFunc("/auth/register", h.handleRegister).Methods("POST")
+	router.HandleFunc("/auth/logout", h.handleLogout).Methods("POST")
 }
 
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -127,6 +127,8 @@ func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
+
+	utils.ClearRefreshTokenCookie(w)
 	utils.WriteJSON(w, http.StatusOK, map[string]string{
 		"message": "User successfully logged out!",
 	})

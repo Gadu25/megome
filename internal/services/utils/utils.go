@@ -47,3 +47,15 @@ func SetRefreshTokenCookie(w http.ResponseWriter, token string) {
 		Expires:  time.Now().Add(14 * 24 * time.Hour),
 	})
 }
+
+func ClearRefreshTokenCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "refresh_token",
+		Value:    "",
+		Path:     "/api/v1/auth",
+		HttpOnly: true,
+		Secure:   false, // true in production
+		SameSite: http.SameSiteStrictMode,
+		MaxAge:   -1,
+	})
+}

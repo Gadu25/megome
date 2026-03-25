@@ -38,24 +38,24 @@ func GetRequestId(r *http.Request) (int, error) {
 
 func SetRefreshTokenCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
+		Name: "refresh_token",
+		// Domain: ".megome.com",
 		Value:    token,
 		HttpOnly: true,
 		Secure:   false, // false only in local dev
-		Path:     "/api/v1/auth",
-		SameSite: http.SameSiteStrictMode,
+		Path:     "/",
 		Expires:  time.Now().Add(14 * 24 * time.Hour),
 	})
 }
 
 func ClearRefreshTokenCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		Name:     "refresh_token",
+		Name: "refresh_token",
+		// Domain: ".megome.com",
 		Value:    "",
-		Path:     "/api/v1/auth",
+		Path:     "/",
 		HttpOnly: true,
-		Secure:   false, // true in production
-		SameSite: http.SameSiteStrictMode,
+		Secure:   false, // false only in local dev
 		MaxAge:   -1,
 	})
 }

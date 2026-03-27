@@ -24,6 +24,7 @@ func NewHandler(userStore types.UserStore, refreshStore types.RefreshTokenStore)
 func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/login", h.handleLogin).Methods("POST")
 	router.HandleFunc("/auth/register", h.handleRegister).Methods("POST")
+	router.HandleFunc("/auth/verify", h.handleVerify).Methods("POST")
 	router.HandleFunc("/auth/logout", h.handleLogout).Methods("POST")
 }
 
@@ -60,6 +61,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(rt)
 
 	utils.SetRefreshTokenCookie(w, rt)
+	utils.SetAccessTokenCookie(w, at)
 
 	utils.WriteJSON(w, http.StatusOK, map[string]string{
 		"message":      "Account was successfully logged in!",
@@ -108,6 +110,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	at, rt, err := h.getTokens(user.ID)
 
 	utils.SetRefreshTokenCookie(w, rt)
+	utils.SetAccessTokenCookie(w, at)
 
 	utils.WriteJSON(w, http.StatusCreated, map[string]string{
 		"message":      "Your account is successfully registered!",
@@ -131,6 +134,24 @@ func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
 	utils.ClearRefreshTokenCookie(w)
 	utils.WriteJSON(w, http.StatusOK, map[string]string{
 		"message": "User successfully logged out!",
+	})
+}
+
+func (h *Handler) handleVerify(w http.ResponseWriter, r *http.Request) {
+	accesstoken, err := r.Cookie("Authentication")
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("Error getting cookie %v", err))
+		return
+	}
+	hasErr := auth.VerifyToken(accesstoken.Value)
+	if hasErr != nil {
+		utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("Access token is invalid %v", err))
+		return
+	}
+	fmt.Println("verified!")
+	fmt.Println(accesstoken.Value)
+	utils.WriteJSON(w, http.StatusOK, map[string]string{
+		"message": "access-token is valid",
 	})
 }
 

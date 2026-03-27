@@ -108,6 +108,19 @@ func validateToken(t string) (*Claims, error) {
 	return claims, nil
 }
 
+func VerifyToken(tokenString string) error {
+	claims, err := validateToken(tokenString)
+	if err != nil {
+		log.Printf("token validation failed: %v", err)
+		return err
+	}
+	if claims.ExpiresAt == nil || claims.ExpiresAt.Time.Before(time.Now()) {
+		log.Println("token expired")
+		return err
+	}
+	return nil
+}
+
 func permissionDenied(w http.ResponseWriter, m string) {
 	utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("permission denied %v", m))
 }

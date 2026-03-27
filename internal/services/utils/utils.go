@@ -44,6 +44,20 @@ func SetRefreshTokenCookie(w http.ResponseWriter, token string) {
 		HttpOnly: true,
 		Secure:   false, // false only in local dev
 		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
+		Expires:  time.Now().Add(14 * 24 * time.Hour),
+	})
+}
+
+func SetAccessTokenCookie(w http.ResponseWriter, token string) {
+	http.SetCookie(w, &http.Cookie{
+		Name: "Authentication",
+		// Domain: ".megome.com",
+		Value:    token,
+		HttpOnly: true,
+		Secure:   false, // false only in local dev
+		Path:     "/",
+		SameSite: http.SameSiteLaxMode,
 		Expires:  time.Now().Add(14 * 24 * time.Hour),
 	})
 }

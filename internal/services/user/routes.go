@@ -24,7 +24,7 @@ func NewHandler(userStore types.UserStore, refreshStore types.RefreshTokenStore)
 func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/login", h.handleLogin).Methods("POST")
 	router.HandleFunc("/auth/register", h.handleRegister).Methods("POST")
-	router.HandleFunc("/auth/verify", h.handleVerify).Methods("POST")
+	router.HandleFunc("/auth/verify", h.handleVerify).Methods("GET")
 	router.HandleFunc("/auth/logout", h.handleLogout).Methods("POST")
 }
 
@@ -58,15 +58,13 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 	}
 
-	fmt.Println(rt)
-
 	utils.SetRefreshTokenCookie(w, rt)
 	utils.SetAccessTokenCookie(w, at)
-
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message":      "Account was successfully logged in!",
-		"access-token": at,
-	})
+	resp := types.AuthResponse{
+		Success: true,
+		Message: "Account was successfully logged in!",
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
@@ -112,10 +110,11 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	utils.SetRefreshTokenCookie(w, rt)
 	utils.SetAccessTokenCookie(w, at)
 
-	utils.WriteJSON(w, http.StatusCreated, map[string]string{
-		"message":      "Your account is successfully registered!",
-		"access-token": at,
-	})
+	resp := types.AuthResponse{
+		Success: true,
+		Message: "Your account is successfully registered!",
+	}
+	utils.WriteJSON(w, http.StatusCreated, resp)
 }
 
 func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -131,16 +130,18 @@ func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	resp := types.AuthResponse{
+		Success: true,
+		Message: "User successfully logged out!",
+	}
 	utils.ClearRefreshTokenCookie(w)
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "User successfully logged out!",
-	})
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleVerify(w http.ResponseWriter, r *http.Request) {
 	accesstoken, err := r.Cookie("Authentication")
 	if err != nil {
-		utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("Error getting cookie %v", err))
+		utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("Error getting access cookie %v", err))
 		return
 	}
 	hasErr := auth.VerifyToken(accesstoken.Value)
@@ -149,10 +150,12 @@ func (h *Handler) handleVerify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Println("verified!")
-	fmt.Println(accesstoken.Value)
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "access-token is valid",
-	})
+
+	resp := types.AuthResponse{
+		Success: true,
+		Message: "access-token is valid",
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) getTokens(userId int) (string, string, error) {

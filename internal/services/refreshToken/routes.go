@@ -18,13 +18,19 @@ func NewHandler(refreshStore types.RefreshTokenStore) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/auth/refresh", h.handleRefresh).Methods("POST")
+	router.HandleFunc("/auth/refresh", h.handleRefresh).Methods("GET")
 }
 
 func (h *Handler) handleRefresh(w http.ResponseWriter, r *http.Request) {
+	// fmt.Println("=== HEADERS HANDLE REFRESH ===")
+	// for key, values := range r.Header {
+	// 	for _, value := range values {
+	// 		fmt.Printf("%s: %s\n", key, value)
+	// 	}
+	// }
 	cookie, err := r.Cookie("refresh_token")
 	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Error getting cookie %v", err))
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Error getting refresh cookie %v", err))
 		return
 	}
 
@@ -35,9 +41,11 @@ func (h *Handler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.SetRefreshTokenCookie(w, newRefreshToken)
+	utils.SetAccessTokenCookie(w, newAccessToken)
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message":      "Token refreshed!",
-		"access-token": newAccessToken,
-	})
+	resp := types.AuthResponse{
+		Success: true,
+		Message: "Token refreshed!",
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }

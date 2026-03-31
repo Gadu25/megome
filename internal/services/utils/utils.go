@@ -61,14 +61,31 @@ func SetAccessTokenCookie(w http.ResponseWriter, token string) {
 	})
 }
 
-func ClearRefreshTokenCookie(w http.ResponseWriter) {
+func ClearRefreshToken(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
-		Name: "refresh_token",
-		// Domain: ".megome.com",
+		Name:     "refresh_token",
 		Value:    "",
 		Path:     "/",
+		MaxAge:   -1, // immediately expire
 		HttpOnly: true,
-		Secure:   false, // false only in local dev
-		MaxAge:   -1,
+		Secure:   true, // set to true in production
+		SameSite: http.SameSiteStrictMode,
 	})
+}
+
+func ClearAccessToken(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "Authentication",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1, // immediately expire
+		HttpOnly: true,
+		Secure:   true, // set to true in production
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+func ClearAllTokens(w http.ResponseWriter) {
+	ClearAccessToken(w)
+	ClearRefreshToken(w)
 }

@@ -134,7 +134,7 @@ func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
 		Success: true,
 		Message: "User successfully logged out!",
 	}
-	utils.ClearRefreshTokenCookie(w)
+	utils.ClearAllTokens(w)
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 

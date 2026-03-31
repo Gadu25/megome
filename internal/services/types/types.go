@@ -48,6 +48,11 @@ type LoginUserPayload struct {
 	Password string `json:"password" validate:"required"`
 }
 
+type AuthResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+}
+
 type ProfileStore interface {
 	GetProfile(userId int) (*Profile, error)
 	MakeProfile(Profile) error

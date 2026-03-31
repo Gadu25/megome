@@ -58,7 +58,6 @@ func SetAccessTokenCookie(w http.ResponseWriter, token string) {
 		Secure:   false, // false only in local dev
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Now().Add(14 * 24 * time.Hour),
 	})
 }
 

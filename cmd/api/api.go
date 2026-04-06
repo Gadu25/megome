@@ -2,7 +2,9 @@ package api
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
+	"megome/config"
 	"megome/internal/services/certification"
 	"megome/internal/services/education"
 	"megome/internal/services/experience"
@@ -11,6 +13,7 @@ import (
 	projecttech "megome/internal/services/projectTech"
 	"megome/internal/services/refreshToken"
 	"megome/internal/services/skill"
+	"megome/internal/services/storage"
 	"megome/internal/services/technology"
 	"megome/internal/services/user"
 	"net/http"
@@ -52,6 +55,22 @@ func (s *APIServer) Run() error {
 	router := mux.NewRouter()
 	subrouter := router.PathPrefix("/api/v1").Subrouter()
 
+	r2Cfg := storage.Config{
+		AccessKey: config.Envs.R2AccessKeyId,
+		SecretKey: config.Envs.R2SecretAccessKey,
+		Bucket:    config.Envs.R2Bucket,
+		Endpoint:  config.Envs.R2Endpoint,
+	}
+	fmt.Println("[DEBUG] R2AccessKeyId", config.Envs.R2AccessKeyId)
+	fmt.Println("[DEBUG] R2SecretAccessKey", config.Envs.R2SecretAccessKey)
+	fmt.Println("[DEBUG] R2Bucket", config.Envs.R2Bucket)
+	fmt.Println("[DEBUG] R2Endpoint", config.Envs.R2Endpoint)
+
+	r2Client, err := storage.NewR2Client(r2Cfg)
+	if err != nil {
+		log.Fatalf("failed to initialize R2 client: %v", err)
+	}
+
 	refreshStore := refreshToken.NewStore(s.db)
 	refreshHandler := refreshToken.NewHandler(refreshStore)
 	refreshHandler.RegisterRoutes(subrouter)
@@ -61,7 +80,7 @@ func (s *APIServer) Run() error {
 	userHandler.RegisterRoutes(subrouter)
 
 	profileStore := profile.NewStore(s.db)
-	profileHandler := profile.NewHandler(profileStore, userStore)
+	profileHandler := profile.NewHandler(profileStore, userStore, r2Client)
 	profileHandler.RegisterRoutes(subrouter)
 
 	experienceStore := experience.NewStore(s.db)

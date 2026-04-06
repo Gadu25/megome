@@ -2,16 +2,16 @@ package storage
 
 import (
 	"context"
+	"fmt"
+	"io"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
 type R2Client struct {
-	client *s3.Client
-	bucket string
+	Client *minio.Client
+	Bucket string
 }
 
 type Config struct {
@@ -19,31 +19,40 @@ type Config struct {
 	SecretKey string
 	Endpoint  string
 	Bucket    string
+	Secure    bool
 }
 
+// NewR2Client initializes the client
 func NewR2Client(cfg Config) (*R2Client, error) {
-	awsCfg, err := config.LoadDefaultConfig(context.TODO(),
-		config.WithRegion("auto"), // R2 doesn’t care about region
-		config.WithCredentialsProvider(
-			credentials.NewStaticCredentialsProvider(cfg.AccessKey, cfg.SecretKey, ""),
-		),
-	)
+	minioClient, err := minio.New(cfg.Endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, ""),
+		Secure: true,
+	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create minio client: %w", err)
 	}
 
-	client := s3.NewFromConfig(awsCfg, func(o *s3.Options) {
-		o.EndpointResolver = s3.EndpointResolverFunc(
-			func(region string, options s3.EndpointResolverOptions) (aws.Endpoint, error) {
-				return aws.Endpoint{
-					URL:           cfg.Endpoint,
-					SigningRegion: "auto",
-				}, nil
-			})
-	})
-
 	return &R2Client{
-		client: client,
-		bucket: cfg.Bucket,
+		Client: minioClient,
+		Bucket: cfg.Bucket,
 	}, nil
+}
+
+// GenerateKey creates a safe object key
+func GenerateKey(prefix, filename string) (string, error) {
+	if filename == "" {
+		return "", fmt.Errorf("filename cannot be empty")
+	}
+	return fmt.Sprintf("%s/%s", prefix, filename), nil
+}
+
+// UploadFromReader uploads a file directly (server-side)
+func (r *R2Client) UploadFromReader(ctx context.Context, key string, reader io.Reader, size int64, contentType string) error {
+	_, err := r.Client.PutObject(ctx, r.Bucket, key, reader, size, minio.PutObjectOptions{
+		ContentType: contentType,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to upload object %s: %w", key, err)
+	}
+	return nil
 }

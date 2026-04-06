@@ -56,3 +56,17 @@ func (r *R2Client) UploadFromReader(ctx context.Context, key string, reader io.R
 	}
 	return nil
 }
+
+// DeleteObject deletes a single file by key
+func (r *R2Client) DeleteObject(ctx context.Context, key string) error {
+	if key == "" {
+		return fmt.Errorf("key cannot be empty")
+	}
+
+	err := r.Client.RemoveObject(ctx, r.Bucket, key, minio.RemoveObjectOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to delete object %s: %w", key, err)
+	}
+
+	return nil
+}

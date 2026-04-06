@@ -71,16 +71,27 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	if err == nil && file != nil {
 		defer file.Close()
 
+		existing, err := h.profileStore.GetProfile(userID)
 		key, err := storage.GenerateKey(fmt.Sprintf("profiles/%d", userID), header.Filename)
+
 		if err != nil {
 			utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid file name: %w", err))
 			return
 		}
 
+		if existing != nil {
+			// remove old image
+			oldKey := existing.ProfileImage
+			err = h.r2Client.DeleteObject(r.Context(), oldKey)
+			if err != nil {
+				utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("failed to update image: %w", err))
+				return
+			}
+		}
+
 		err = h.r2Client.UploadFromReader(r.Context(), key, file, header.Size, header.Header.Get("Content-Type"))
 		if err != nil {
-			utils.WriteError(w, http.StatusInternalServerError,
-				fmt.Errorf("failed to upload image: %w", err))
+			utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("failed to upload image: %w", err))
 			return
 		}
 

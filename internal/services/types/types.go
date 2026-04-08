@@ -71,11 +71,10 @@ type Profile struct {
 }
 
 type MakeProfilePayload struct {
-	Bio          string `json:"bio"`
-	Phone        string `json:"phone"`
-	Website      string `json:"website"`
-	Location     string `json:"location"`
-	ProfileImage string `json:"profileImage"`
+	Bio      string `json:"bio"`
+	Phone    string `json:"phone"`
+	Website  string `json:"website"`
+	Location string `json:"location"`
 }
 
 type ExperienceStore interface {

@@ -89,3 +89,16 @@ func ClearAllTokens(w http.ResponseWriter) {
 	ClearAccessToken(w)
 	ClearRefreshToken(w)
 }
+
+func GetFiletypeExtension(fileType string) (string, error) {
+	switch fileType {
+	case "image/jpeg":
+		return ".jpg", nil
+	case "image/png":
+		return ".png", nil
+	case "image/webp":
+		return ".webp", nil
+	default:
+		return "", fmt.Errorf("unsupported file type: %s", fileType)
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"megome/internal/services/certification"
 	"megome/internal/services/education"
 	"megome/internal/services/experience"
+	"megome/internal/services/initData"
 	"megome/internal/services/profile"
 	"megome/internal/services/project"
 	projecttech "megome/internal/services/projectTech"
@@ -82,6 +83,9 @@ func (s *APIServer) Run() error {
 	profileStore := profile.NewStore(s.db)
 	profileHandler := profile.NewHandler(profileStore, userStore, r2Client)
 	profileHandler.RegisterRoutes(subrouter)
+
+	initHandler := initData.NewHandler(profileStore, userStore)
+	initHandler.RegisterRoutes(subrouter)
 
 	experienceStore := experience.NewStore(s.db)
 	experienceHandler := experience.NewHandler(experienceStore, userStore)

@@ -7,6 +7,7 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+	"megome/internal/services/utils"
 )
 
 type R2Client struct {
@@ -39,11 +40,15 @@ func NewR2Client(cfg Config) (*R2Client, error) {
 }
 
 // GenerateKey creates a safe object key
-func GenerateKey(prefix, filename string) (string, error) {
+func GenerateKey(prefix, filename string, fileType string) (string, error) {
+	fileType, err := utils.GetFiletypeExtension(fileType)
+	if err != nil {
+		return "", err
+	}
 	if filename == "" {
 		return "", fmt.Errorf("filename cannot be empty")
 	}
-	return fmt.Sprintf("%s/%s", prefix, filename), nil
+	return fmt.Sprintf("%s/%s", prefix, filename + fileType), nil
 }
 
 // UploadFromReader uploads a file directly (server-side)

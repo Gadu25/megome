@@ -69,8 +69,8 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	fileType := http.DetectContentType(buffer)
 
 	if fileType != "image/jpeg" && fileType != "image/png" && fileType != "image/webp" {
-			utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid file type: %w", fileType))
-			return
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid file type: %w", fileType))
+		return
 	}
 
 	payload := types.MakeProfilePayload{

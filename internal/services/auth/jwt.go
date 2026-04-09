@@ -9,7 +9,6 @@ import (
 	"megome/internal/services/utils"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -75,17 +74,21 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, store types.UserStore) http.Handl
 }
 
 func getTokenFromRequest(r *http.Request) string {
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
+	// authHeader := r.Header.Get("Authorization")
+	cookie, err := r.Cookie("Authentication")
+	if err != nil {
 		return ""
 	}
+	// if authHeader == "" {
+	// 	return ""
+	// }
 
-	parts := strings.Split(authHeader, " ")
-	if len(parts) != 2 || parts[0] != "Bearer" {
-		return ""
-	}
+	// parts := strings.Split(authHeader, " ")
+	// if len(parts) != 2 || parts[0] != "Bearer" {
+	// 	return ""
+	// }
 
-	return parts[1]
+	return cookie.Value
 }
 
 func validateToken(t string) (*Claims, error) {

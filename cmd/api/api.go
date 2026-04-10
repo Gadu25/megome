@@ -2,7 +2,6 @@ package api
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"megome/config"
 	"megome/internal/services/certification"

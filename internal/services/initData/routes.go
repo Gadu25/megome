@@ -1,7 +1,6 @@
 package initData
 
 import (
-	"fmt"
 	"megome/internal/services/auth"
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
@@ -16,7 +15,7 @@ type Onboarding struct {
 }
 
 type InitData struct {
-	Profile *types.Profile
+	Profile *types.Profile `json:"profile"`
 }
 
 type Handler struct {
@@ -25,7 +24,7 @@ type Handler struct {
 }
 
 type InitResponse struct {
-	Status bool
+	success bool
 	InitData
 }
 
@@ -39,19 +38,14 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 
 func (h *Handler) handleInit(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserIDFromContext(r.Context())
-	profile, err := h.profileStore.GetProfile(userID)
-
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("Error getting user: %w", err))
-		return
-	}
+	profile, _ := h.profileStore.GetProfile(userID)
 
 	init := InitData{
 		Profile: profile,
 	}
 
 	initResp := InitResponse{
-		Status:   true,
+		success:  true,
 		InitData: init,
 	}
 

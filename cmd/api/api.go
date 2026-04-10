@@ -62,10 +62,6 @@ func (s *APIServer) Run() error {
 		Bucket:    config.Envs.R2Bucket,
 		Endpoint:  config.Envs.R2Endpoint,
 	}
-	fmt.Println("[DEBUG] R2AccessKeyId", config.Envs.R2AccessKeyId)
-	fmt.Println("[DEBUG] R2SecretAccessKey", config.Envs.R2SecretAccessKey)
-	fmt.Println("[DEBUG] R2Bucket", config.Envs.R2Bucket)
-	fmt.Println("[DEBUG] R2Endpoint", config.Envs.R2Endpoint)
 
 	r2Client, err := storage.NewR2Client(r2Cfg)
 	if err != nil {

@@ -47,10 +47,29 @@ func (h *Handler) handleViewProfiles(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserIDFromContext(r.Context())
 
-	// Parse multipart form (10MB max)
-	// TODO: This should be updated to limit file sizes to less 1mb
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("failed to parse form: %w", err))
+	file, handler, err := r.FormFile("profileImage")
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Error handling file: %w", err))
+		return
+	}
+
+	// 1MB will only allowed
+	// TODO compress and convert uploaded files to webp for better user experience.
+	if handler.Size > 1<<20 {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("file too large (max 1MB)"))
+    return
+	}
+
+	buffer := make([]byte, 512)
+	_, err = file.Read(buffer)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("failed to read file: %w", err))
+		return
+	}
+	fileType := http.DetectContentType(buffer)
+
+	if fileType != "image/jpeg" && fileType != "image/png" && fileType != "image/webp" {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid file type: %w", fileType))
 		return
 	}
 
@@ -74,7 +93,7 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		defer file.Close()
 
 		existing, err := h.profileStore.GetProfile(userID)
-		key, err := storage.GenerateKey(fmt.Sprintf("profiles/%d", userID), header.Filename)
+		key, err := storage.GenerateKey(fmt.Sprintf("profiles/%d", userID), "avatar", fileType)
 
 		if err != nil {
 			utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid file name: %w", err))

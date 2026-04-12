@@ -29,16 +29,12 @@ type UserStore interface {
 
 type User struct {
 	ID        int       `json:"id"`
-	FirstName string    `json:"firstName"`
-	LastName  string    `json:"lastName"`
 	Email     string    `json:"email"`
 	Password  string    `json:"password"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 
 type RegisterUserPayload struct {
-	FirstName string `json:"firstName" validate:"required"`
-	LastName  string `json:"lastName" validate:"required"`
 	Email     string `json:"email" validate:"required,email"`
 	Password  string `json:"password" validate:"required,min=3,max=130"`
 }
@@ -61,6 +57,8 @@ type ProfileStore interface {
 type Profile struct {
 	ID           int    `json:"id"`
 	UserID       int    `json:"userId"`
+	FirstName    string `json:"firstName"`
+	LastName     string `json:"lastName"`
 	Bio          string `json:"bio"`
 	Phone        string `json:"phone"`
 	Website      string `json:"website"`
@@ -71,10 +69,12 @@ type Profile struct {
 }
 
 type MakeProfilePayload struct {
-	Bio      string `json:"bio"`
-	Phone    string `json:"phone"`
-	Website  string `json:"website"`
-	Location string `json:"location"`
+	Bio       string `json:"bio"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
+	Phone     string `json:"phone"`
+	Website   string `json:"website"`
+	Location  string `json:"location"`
 }
 
 type ExperienceStore interface {

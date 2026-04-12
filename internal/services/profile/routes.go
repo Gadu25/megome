@@ -74,10 +74,12 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	payload := types.MakeProfilePayload{
-		Bio:      r.FormValue("bio"),
-		Phone:    r.FormValue("phone"),
-		Website:  r.FormValue("website"),
-		Location: r.FormValue("location"),
+		Bio:       r.FormValue("bio"),
+		FirstName: r.FormValue("firstName"),
+		LastName:  r.FormValue("lastName"),
+		Phone:     r.FormValue("phone"),
+		Website:   r.FormValue("website"),
+		Location:  r.FormValue("location"),
 	}
 
 	if err := utils.Validate.Struct(payload); err != nil {
@@ -124,6 +126,8 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	err = h.profileStore.MakeProfile(types.Profile{
 		UserID:       userID,
 		Bio:          payload.Bio,
+		FirstName:    payload.FirstName,
+		LastName:     payload.LastName,
 		Phone:        payload.Phone,
 		Website:      payload.Website,
 		Location:     payload.Location,
@@ -134,8 +138,17 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message":      "Profile updated successfully",
-		"profileImage": profileImageKey,
-	})
+	profile, err := h.profileStore.GetProfile(userID)
+	
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	resp := ProfileResponse{
+		Message: "Profile updated successfully",
+		Data:    profile,
+	}
+
+	utils.WriteJSON(w, http.StatusOK, resp)
 }

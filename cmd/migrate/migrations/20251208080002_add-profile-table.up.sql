@@ -2,6 +2,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   userId INT UNSIGNED NOT NULL,
   bio TEXT,
+  firstName VARCHAR(255),
+  lastName VARCHAR(255),
   phone VARCHAR(20),
   website VARCHAR(255),
   location VARCHAR(255),

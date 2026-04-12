@@ -138,8 +138,17 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message":      "Profile updated successfully",
-		"profileImage": profileImageKey,
-	})
+	profile, err := h.profileStore.GetProfile(userID)
+	
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	resp := ProfileResponse{
+		Message: "Profile updated successfully",
+		Data:    profile,
+	}
+
+	utils.WriteJSON(w, http.StatusOK, resp)
 }

@@ -3,6 +3,7 @@ package profile
 import (
 	"database/sql"
 	"megome/internal/services/types"
+	"megome/internal/services/utils"
 )
 
 type Store struct {
@@ -73,6 +74,10 @@ func scanRowIntoProfile(row *sql.Row) (*types.Profile, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	if profile.ProfileImage != "" {
+		profile.ProfileImage = utils.GetPublicFile(profile.ProfileImage)
 	}
 
 	return profile, nil

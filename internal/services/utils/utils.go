@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"megome/config"
 	"net/http"
 	"strconv"
 	"time"
@@ -101,4 +102,9 @@ func GetFiletypeExtension(fileType string) (string, error) {
 	default:
 		return "", fmt.Errorf("unsupported file type: %s", fileType)
 	}
+}
+
+func GetPublicFile(path string) string {
+	baseUrl := config.Envs.R2PublicUrl
+	return fmt.Sprintf("%s/%s", baseUrl, path)
 }

@@ -21,11 +21,13 @@ func (s *Store) GetProfile(userId int) (*types.Profile, error) {
 func (s *Store) MakeProfile(profile types.Profile) error {
 	existing, err := s.GetProfile(profile.UserID)
 	if err != nil {
-		_, err = s.db.Exec("INSERT INTO profiles (userId, bio, firstName, lastName, phone, website, location, profileImage) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+		_, err = s.db.Exec("INSERT INTO profiles (userId, bio, firstName, lastName, title, birthday, phone, website, location, profileImage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 			profile.UserID,
 			profile.Bio,
 			profile.FirstName,
 			profile.LastName,
+			profile.Title,
+			profile.Birthday,
 			profile.Phone,
 			profile.Website,
 			profile.Location,
@@ -36,10 +38,12 @@ func (s *Store) MakeProfile(profile types.Profile) error {
 		}
 	}
 	if existing != nil {
-		_, err = s.db.Exec("UPDATE profiles SET bio = ?, firstName = ?, lastName = ?,  phone = ?, website = ?, location = ?, profileImage = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?",
+		_, err = s.db.Exec("UPDATE profiles SET bio = ?, firstName = ?, lastName = ?, title = ?, birthday = ?, phone = ?, website = ?, location = ?, profileImage = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?",
 			profile.Bio,
 			profile.FirstName,
 			profile.LastName,
+			profile.Title,
+			profile.Birthday,
 			profile.Phone,
 			profile.Website,
 			profile.Location,
@@ -63,6 +67,8 @@ func scanRowIntoProfile(row *sql.Row) (*types.Profile, error) {
 		&profile.Bio,
 		&profile.FirstName,
 		&profile.LastName,
+		&profile.Title,
+		&profile.Birthday,
 		&profile.Phone,
 		&profile.Website,
 		&profile.Location,

@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   bio TEXT,
   firstName VARCHAR(255),
   lastName VARCHAR(255),
+  title VARCHAR(255),
+  birthday DATE,
   phone VARCHAR(20),
   website VARCHAR(255),
   location VARCHAR(255),

@@ -18,7 +18,7 @@ type Handler struct {
 }
 type ProfileResponse struct {
 	Message string         `json:"message"`
-	Data    *types.Profile `json:"data"`
+	Profile *types.Profile `json:"profile"`
 }
 
 func NewHandler(profileStore types.ProfileStore, userStore types.UserStore, r2Client *storage.R2Client) *Handler {
@@ -39,7 +39,7 @@ func (h *Handler) handleViewProfiles(w http.ResponseWriter, r *http.Request) {
 	}
 	resp := ProfileResponse{
 		Message: "Profile fetched successfully",
-		Data:    profile,
+		Profile: profile,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
@@ -77,6 +77,8 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		Bio:       r.FormValue("bio"),
 		FirstName: r.FormValue("firstName"),
 		LastName:  r.FormValue("lastName"),
+		Title:     r.FormValue("title"),
+		Birthday:  r.FormValue("birthday"),
 		Phone:     r.FormValue("phone"),
 		Website:   r.FormValue("website"),
 		Location:  r.FormValue("location"),
@@ -128,6 +130,8 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		Bio:          payload.Bio,
 		FirstName:    payload.FirstName,
 		LastName:     payload.LastName,
+		Title:        payload.Title,
+		Birthday:     payload.Birthday,
 		Phone:        payload.Phone,
 		Website:      payload.Website,
 		Location:     payload.Location,
@@ -147,7 +151,7 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 	resp := ProfileResponse{
 		Message: "Profile updated successfully",
-		Data:    profile,
+		Profile: profile,
 	}
 
 	utils.WriteJSON(w, http.StatusOK, resp)

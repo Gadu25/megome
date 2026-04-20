@@ -35,8 +35,8 @@ type User struct {
 }
 
 type RegisterUserPayload struct {
-	Email     string `json:"email" validate:"required,email"`
-	Password  string `json:"password" validate:"required,min=3,max=130"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=3,max=130"`
 }
 
 type LoginUserPayload struct {
@@ -59,6 +59,8 @@ type Profile struct {
 	UserID       int    `json:"userId"`
 	FirstName    string `json:"firstName"`
 	LastName     string `json:"lastName"`
+	Title        string `json:"title"`
+	Birthday     string `json:"birthday"`
 	Bio          string `json:"bio"`
 	Phone        string `json:"phone"`
 	Website      string `json:"website"`
@@ -72,6 +74,8 @@ type MakeProfilePayload struct {
 	Bio       string `json:"bio"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
+	Birthday  string `json:"birthday"`
+	Title     string `json:"title"`
 	Phone     string `json:"phone"`
 	Website   string `json:"website"`
 	Location  string `json:"location"`

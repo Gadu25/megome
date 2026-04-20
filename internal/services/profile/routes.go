@@ -100,10 +100,12 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 			if existing != nil {
 				// remove old image
 				oldKey := existing.ProfileImage
-				err = h.r2Client.DeleteObject(r.Context(), oldKey)
-				if err != nil {
-					utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("failed to update image: %w", err))
-					return
+				if oldKey != "" {
+					err = h.r2Client.DeleteObject(r.Context(), oldKey)
+					if err != nil {
+						utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("failed to update image: %w", err))
+						return
+					}
 				}
 			}
 

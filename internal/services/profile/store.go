@@ -38,19 +38,35 @@ func (s *Store) MakeProfile(profile types.Profile) error {
 			return err
 		}
 	}
+
 	if existing != nil {
-		_, err = s.db.Exec("UPDATE profiles SET bio = ?, firstName = ?, lastName = ?, title = ?, birthday = ?, phone = ?, website = ?, location = ?, profileImage = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?",
-			profile.Bio,
-			profile.FirstName,
-			profile.LastName,
-			profile.Title,
-			profile.Birthday,
-			profile.Phone,
-			profile.Website,
-			profile.Location,
-			profile.ProfileImage,
-			profile.UserID,
-		)
+		// should be improve
+		if profile.ProfileImage != "" {
+			_, err = s.db.Exec("UPDATE profiles SET bio = ?, firstName = ?, lastName = ?, title = ?, birthday = ?, phone = ?, website = ?, location = ?, profileImage = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?",
+				profile.Bio,
+				profile.FirstName,
+				profile.LastName,
+				profile.Title,
+				profile.Birthday,
+				profile.Phone,
+				profile.Website,
+				profile.Location,
+				profile.ProfileImage,
+				profile.UserID,
+			)
+		} else {
+			_, err = s.db.Exec("UPDATE profiles SET bio = ?, firstName = ?, lastName = ?, title = ?, birthday = ?, phone = ?, website = ?, location = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?",
+				profile.Bio,
+				profile.FirstName,
+				profile.LastName,
+				profile.Title,
+				profile.Birthday,
+				profile.Phone,
+				profile.Website,
+				profile.Location,
+				profile.UserID,
+			)
+		}
 		if err != nil {
 			return err
 		}

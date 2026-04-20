@@ -40,33 +40,32 @@ func (s *Store) MakeProfile(profile types.Profile) error {
 	}
 
 	if existing != nil {
-		// should be improve
-		if profile.ProfileImage != "" {
-			_, err = s.db.Exec("UPDATE profiles SET bio = ?, firstName = ?, lastName = ?, title = ?, birthday = ?, phone = ?, website = ?, location = ?, profileImage = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?",
-				profile.Bio,
-				profile.FirstName,
-				profile.LastName,
-				profile.Title,
-				profile.Birthday,
-				profile.Phone,
-				profile.Website,
-				profile.Location,
-				profile.ProfileImage,
-				profile.UserID,
-			)
-		} else {
-			_, err = s.db.Exec("UPDATE profiles SET bio = ?, firstName = ?, lastName = ?, title = ?, birthday = ?, phone = ?, website = ?, location = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?",
-				profile.Bio,
-				profile.FirstName,
-				profile.LastName,
-				profile.Title,
-				profile.Birthday,
-				profile.Phone,
-				profile.Website,
-				profile.Location,
-				profile.UserID,
-			)
+		query := `
+			UPDATE profiles 
+			SET bio = ?, firstName = ?, lastName = ?, title = ?, birthday = ?, phone = ?, website = ?, location = ?, updatedAt = CURRENT_TIMESTAMP
+		`
+
+		args := []any{
+			profile.Bio,
+			profile.FirstName,
+			profile.LastName,
+			profile.Title,
+			profile.Birthday,
+			profile.Phone,
+			profile.Website,
+			profile.Location,
 		}
+
+		// only include if provided
+		if profile.ProfileImage != "" {
+			query += ", profileImage = ?"
+			args = append(args, profile.ProfileImage)
+		}
+
+		query += " WHERE userId = ?"
+		args = append(args, profile.UserID)
+
+		_, err = s.db.Exec(query, args...)
 		if err != nil {
 			return err
 		}

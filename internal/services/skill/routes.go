@@ -18,7 +18,7 @@ type Handler struct {
 
 type SkillReponse struct {
 	Message string        `json:"message"`
-	Data    []types.Skill `json:"data"`
+	Skills  []types.Skill `json:"skills"`
 }
 
 func NewHandler(skillStore types.SkillStore, userStore types.UserStore) *Handler {
@@ -41,17 +41,16 @@ func (h *Handler) handleViewSkills(w http.ResponseWriter, r *http.Request) {
 	}
 	resp := SkillReponse{
 		Message: "Skills fetched successfully",
-		Data:    skills,
+		Skills:  skills,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleCreateSkill(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	var payload types.SkillPayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	payload := types.SkillPayload{
+		SkillName:   r.FormValue("skillName"),
+		Proficiency: r.FormValue("proficiency"),
 	}
 
 	// validate the payload

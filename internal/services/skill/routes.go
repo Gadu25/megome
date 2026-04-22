@@ -142,5 +142,17 @@ func (h *Handler) handleDeleteSkill(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Skill is successfully deleted"})
+	userID := auth.GetUserIDFromContext(r.Context())
+	skills, err := h.skillStore.GetSkills(userID)
+
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	resp := SkillReponse{
+		Message: "Skill deleted successfully",
+		Skills:  skills,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }

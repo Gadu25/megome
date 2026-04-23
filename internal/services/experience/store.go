@@ -43,7 +43,7 @@ func (s *Store) GetExperiences(userID int) ([]types.Experience, error) {
 	}
 	defer rows.Close()
 
-	var experiences []types.Experience
+	experiences := make([]types.Experience, 0)
 
 	for rows.Next() {
 		exp, err := scanRowIntoExperience(rows)

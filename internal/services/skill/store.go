@@ -40,7 +40,7 @@ func (s *Store) GetSkills(userID int) ([]types.Skill, error) {
 	}
 	defer rows.Close()
 
-	var skills []types.Skill
+	skills := make([]types.Skill, 0)
 
 	for rows.Next() {
 		skill, err := scanRowIntoSkill(rows)

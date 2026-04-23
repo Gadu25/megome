@@ -39,7 +39,8 @@ func (s *Store) GetProjects(userId int) ([]types.Project, error) {
 	}
 	defer rows.Close()
 
-	var projects []types.Project
+	projects := make([]types.Project, 0)
+
 	for rows.Next() {
 		project, err := scanRowIntoProject(rows)
 		if err != nil {

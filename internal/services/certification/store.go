@@ -41,7 +41,8 @@ func (s *Store) GetCertifications(userId int) ([]types.Certification, error) {
 	}
 	defer rows.Close()
 
-	var certifications []types.Certification
+	certifications := make([]types.Certification, 0)
+	
 	for rows.Next() {
 		cert, err := scanRowIntoCertification(rows)
 		if err != nil {

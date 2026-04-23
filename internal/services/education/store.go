@@ -14,7 +14,7 @@ func NewStore(db *sql.DB) *Store {
 }
 
 func (s *Store) GetEducationById(id int) (*types.Education, error) {
-	row := s.db.QueryRow("SELECT id, userId, school, degree, fieldOfStudy, startDate, endDate FROM educations WHERE id = ?", id)
+	row := s.db.QueryRow("SELECT id, userId, school, degree, fieldOfStudy, startDate, endDate FROM education WHERE id = ?", id)
 	education := new(types.Education)
 	err := row.Scan(
 		&education.ID,
@@ -33,7 +33,7 @@ func (s *Store) GetEducationById(id int) (*types.Education, error) {
 
 func (s *Store) GetEducations(userID int) ([]types.Education, error) {
 	rows, err := s.db.Query(
-		"SELECT id, school, degree, fieldOfStudy, startDate, endDate from educations WHERE userId = ?",
+		"SELECT id, school, degree, fieldOfStudy, startDate, endDate from education WHERE userId = ?",
 		userID,
 	)
 	if err != nil {
@@ -41,7 +41,7 @@ func (s *Store) GetEducations(userID int) ([]types.Education, error) {
 	}
 	defer rows.Close()
 
-	var educations []types.Education
+	educations := make([]types.Education, 0)
 
 	for rows.Next() {
 		educ, err := scanRowIntoEducation(rows)
@@ -54,7 +54,7 @@ func (s *Store) GetEducations(userID int) ([]types.Education, error) {
 }
 
 func (s *Store) CreateEducation(education types.Education) error {
-	_, err := s.db.Exec("INSERT INTO educations (userId, school, degree, fieldOfStudy, startDate, endDate) VALUES(?, ?, ?, ?, ?, ?)",
+	_, err := s.db.Exec("INSERT INTO education (userId, school, degree, fieldOfStudy, startDate, endDate) VALUES(?, ?, ?, ?, ?, ?)",
 		education.UserID,
 		education.School,
 		education.Degree,
@@ -69,7 +69,7 @@ func (s *Store) CreateEducation(education types.Education) error {
 }
 
 func (s *Store) UpdateEducation(id int, education types.Education) error {
-	_, err := s.db.Exec("UPDATE educations SET school = ?, degree = ?, fieldOfStudy = ?, startDate = ?, endDate = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
+	_, err := s.db.Exec("UPDATE education SET school = ?, degree = ?, fieldOfStudy = ?, startDate = ?, endDate = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
 		education.School,
 		education.Degree,
 		education.FieldOfStudy,
@@ -88,7 +88,7 @@ func (s *Store) DeleteEducation(id int) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.db.Exec("DELETE FROM educations WHERE id = ?", id)
+	_, err = s.db.Exec("DELETE FROM education WHERE id = ?", id)
 	if err != nil {
 		return err
 	}

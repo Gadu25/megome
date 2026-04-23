@@ -18,7 +18,7 @@ type Handler struct {
 
 type ExperienceResponse struct {
 	Message string             `json:"message"`
-	Data    []types.Experience `json:"data"`
+	Experience    []types.Experience `json:"experience"`
 }
 
 func NewHandler(experienceStore types.ExperienceStore, userStore types.UserStore) *Handler {
@@ -41,7 +41,7 @@ func (h *Handler) handleViewExperiences(w http.ResponseWriter, r *http.Request) 
 	}
 	resp := ExperienceResponse{
 		Message: "Experience fetched successfully",
-		Data:    experiences,
+		Experience:    experiences,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
@@ -75,7 +75,17 @@ func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request)
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Experience is successfully created"})
+
+	experiences, err := h.experienceStore.GetExperiences(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := ExperienceResponse{
+		Message: "Experience created successfully",
+		Experience:    experiences,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleEditExperience(w http.ResponseWriter, r *http.Request) {
@@ -112,8 +122,17 @@ func (h *Handler) handleEditExperience(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Experience is successfully updated"})
-}
+	userID := auth.GetUserIDFromContext(r.Context())
+	experiences, err := h.experienceStore.GetExperiences(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := ExperienceResponse{
+		Message: "Experience updated successfully",
+		Experience:    experiences,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)}
 
 func (h *Handler) handleDeleteExperience(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.GetRequestId(r)
@@ -126,5 +145,16 @@ func (h *Handler) handleDeleteExperience(w http.ResponseWriter, r *http.Request)
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Experience is successfully deleted"})
+
+	userID := auth.GetUserIDFromContext(r.Context())
+	experiences, err := h.experienceStore.GetExperiences(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := ExperienceResponse{
+		Message: "Experience deleted successfully",
+		Experience:    experiences,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }

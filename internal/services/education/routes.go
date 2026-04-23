@@ -18,7 +18,7 @@ type Handler struct {
 
 type EducationResponse struct {
 	Message string            `json:"message"`
-	Data    []types.Education `json:"data"`
+	Education    []types.Education `json:"education"`
 }
 
 func NewHandler(educationStore types.EducationStore, userStore types.UserStore) *Handler {
@@ -41,7 +41,7 @@ func (h *Handler) handleViewEducation(w http.ResponseWriter, r *http.Request) {
 	}
 	resp := EducationResponse{
 		Message: "Education fetched successfully",
-		Data:    educations,
+		Education:    educations,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
@@ -73,9 +73,17 @@ func (h *Handler) handleCreateEducation(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "Education is successfully created",
-	})
+
+	educations, err := h.educationStore.GetEducations(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := EducationResponse{
+		Message: "Education fetched successfully",
+		Education:    educations,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 func (h *Handler) handleEditEducation(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
@@ -108,8 +116,20 @@ func (h *Handler) handleEditEducation(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Education is successfully updated"})
+
+	userID := auth.GetUserIDFromContext(r.Context())
+	educations, err := h.educationStore.GetEducations(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := EducationResponse{
+		Message: "Education fetched successfully",
+		Education:    educations,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
+
 func (h *Handler) handleDeleteEducation(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.GetRequestId(r)
 	if err != nil {
@@ -121,5 +141,16 @@ func (h *Handler) handleDeleteEducation(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Education is successfully deleted"})
+	
+	userID := auth.GetUserIDFromContext(r.Context())
+	educations, err := h.educationStore.GetEducations(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := EducationResponse{
+		Message: "Education fetched successfully",
+		Education:    educations,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }

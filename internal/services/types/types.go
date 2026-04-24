@@ -214,12 +214,14 @@ type ProjectStore interface {
 }
 
 type Project struct {
-	ID          int    `json:"id"`
-	UserID      int    `json:"userId"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Link        string `json:"link"`
-	GithubLink  string `json:"githubLink"`
+	ID          int     `json:"id"`
+	UserID      int     `json:"userId"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	Link        string  `json:"link"`
+	GithubLink  string  `json:"githubLink"`
+	CreatedAt   string  `json:"createdAt"`
+	UpdatedAt   *string `json:"updatedAt"`
 }
 
 type ProjectPayload struct {

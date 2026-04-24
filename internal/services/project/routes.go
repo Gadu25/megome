@@ -17,8 +17,8 @@ type Handler struct {
 }
 
 type ProjectResponse struct {
-	Message string          `json:"message"`
-	Data    []types.Project `json:"project"`
+	Message  string          `json:"message"`
+	Projects []types.Project `json:"projects"`
 }
 
 func NewHandler(projectStore types.ProjectStore, userStore types.UserStore) *Handler {
@@ -40,8 +40,8 @@ func (h *Handler) handleViewProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp := ProjectResponse{
-		Message: "Project fetched successfully",
-		Data:    projects,
+		Message:  "Project fetched successfully",
+		Projects: projects,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
@@ -74,9 +74,16 @@ func (h *Handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "Project is successfully created",
-	})
+	projects, err := h.projectStore.GetProjects(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := ProjectResponse{
+		Message:  "Project fetched successfully",
+		Projects: projects,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
@@ -110,9 +117,18 @@ func (h *Handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "Project is successfully updated",
-	})
+
+	userID := auth.GetUserIDFromContext(r.Context())
+	projects, err := h.projectStore.GetProjects(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := ProjectResponse{
+		Message:  "Project fetched successfully",
+		Projects: projects,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
@@ -126,7 +142,16 @@ func (h *Handler) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "Project is successfully deleted",
-	})
+
+	userID := auth.GetUserIDFromContext(r.Context())
+	projects, err := h.projectStore.GetProjects(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := ProjectResponse{
+		Message:  "Project fetched successfully",
+		Projects: projects,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }

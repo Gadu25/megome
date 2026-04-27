@@ -48,10 +48,11 @@ func (h *Handler) handleViewProject(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	var payload types.ProjectPayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	payload := types.ProjectPayload{
+		Title:       r.FormValue("title"),
+		Description: r.FormValue("description"),
+		Link:        r.FormValue("link"),
+		GithubLink:  r.FormValue("githubLink"),
 	}
 
 	// validate the payload
@@ -88,10 +89,11 @@ func (h *Handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	var payload types.ProjectPayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	payload := types.ProjectPayload{
+		Title:       r.FormValue("title"),
+		Description: r.FormValue("description"),
+		Link:        r.FormValue("link"),
+		GithubLink:  r.FormValue("githubLink"),
 	}
 
 	// validate the payload

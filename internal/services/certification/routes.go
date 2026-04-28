@@ -17,8 +17,8 @@ type Handler struct {
 }
 
 type CertificationResponse struct {
-	Message string                `json:"message"`
-	Data    []types.Certification `json:"data"`
+	Message      string                `json:"message"`
+	Certificates []types.Certification `json:"certificates"`
 }
 
 func NewHandler(certificationStore types.CertificationStore, userStore types.UserStore) *Handler {
@@ -40,18 +40,39 @@ func (h *Handler) handleViewCertification(w http.ResponseWriter, r *http.Request
 		return
 	}
 	resp := CertificationResponse{
-		Message: "Certification fetched successfully",
-		Data:    certifications,
+		Message:      "Certification fetched successfully",
+		Certificates: certifications,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleCreateCertification(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	var payload types.CertificationPayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	expirationStr := r.FormValue("expirationDate")
+	credentialIdStr := r.FormValue("credentialId")
+	credentialUrlStr := r.FormValue("credentialUrl")
+
+	var expiration *string
+	var credentialId *string
+	var credentialUrl *string
+
+	if expirationStr != "" {
+		expiration = &expirationStr
+	}
+	if credentialIdStr != "" {
+		credentialId = &credentialIdStr
+	}
+	if credentialUrlStr != "" {
+		credentialUrl = &credentialUrlStr
+	}
+
+	payload := types.CertificationPayload{
+		Title:          r.FormValue("title"),
+		Issuer:         r.FormValue("issuer"),
+		IssueDate:      r.FormValue("issueDate"),
+		ExpirationDate: expiration,
+		CredentialId:   credentialId,
+		CredentialUrl:  credentialUrl,
 	}
 
 	// validate the payload
@@ -76,16 +97,44 @@ func (h *Handler) handleCreateCertification(w http.ResponseWriter, r *http.Reque
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "Certification is successfully created",
-	})
+	certifications, err := h.certificationStore.GetCertifications(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := CertificationResponse{
+		Message:      "Certification fetched successfully",
+		Certificates: certifications,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 func (h *Handler) handleEditCertification(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	var payload types.CertificationPayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	expirationStr := r.FormValue("expirationDate")
+	credentialIdStr := r.FormValue("credentialId")
+	credentialUrlStr := r.FormValue("credentialUrl")
+
+	var expiration *string
+	var credentialId *string
+	var credentialUrl *string
+
+	if expirationStr != "" {
+		expiration = &expirationStr
+	}
+	if credentialIdStr != "" {
+		credentialId = &credentialIdStr
+	}
+	if credentialUrlStr != "" {
+		credentialUrl = &credentialUrlStr
+	}
+
+	payload := types.CertificationPayload{
+		Title:          r.FormValue("title"),
+		Issuer:         r.FormValue("issuer"),
+		IssueDate:      r.FormValue("issueDate"),
+		ExpirationDate: expiration,
+		CredentialId:   credentialId,
+		CredentialUrl:  credentialUrl,
 	}
 
 	// validate the payload
@@ -113,9 +162,17 @@ func (h *Handler) handleEditCertification(w http.ResponseWriter, r *http.Request
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "Certification is successfully updated",
-	})
+	userID := auth.GetUserIDFromContext(r.Context())
+	certifications, err := h.certificationStore.GetCertifications(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := CertificationResponse{
+		Message:      "Certification fetched successfully",
+		Certificates: certifications,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 func (h *Handler) handleDeleteCertification(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.GetRequestId(r)
@@ -128,7 +185,15 @@ func (h *Handler) handleDeleteCertification(w http.ResponseWriter, r *http.Reque
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "Certification is successfully deleted",
-	})
+	userID := auth.GetUserIDFromContext(r.Context())
+	certifications, err := h.certificationStore.GetCertifications(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := CertificationResponse{
+		Message:      "Certification fetched successfully",
+		Certificates: certifications,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }

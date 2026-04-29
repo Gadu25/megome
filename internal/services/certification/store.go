@@ -13,9 +13,10 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) GetCertificationById(id int) (*types.Certification, error) {
+func (s *Store) GetCertificationById(id int) (types.Certification, error) {
 	row := s.db.QueryRow("SELECT id, title, issuer, issueDate, expirationDate, credentialId, credentialUrl FROM certifications WHERE id = ?", id)
-	certification := new(types.Certification)
+
+	var certification types.Certification
 	err := row.Scan(
 		&certification.ID,
 		&certification.Title,
@@ -25,9 +26,11 @@ func (s *Store) GetCertificationById(id int) (*types.Certification, error) {
 		&certification.CredentialId,
 		&certification.CredentialUrl,
 	)
+
 	if err != nil {
-		return nil, err
+		return types.Certification{}, err
 	}
+
 	return certification, nil
 }
 
@@ -42,7 +45,7 @@ func (s *Store) GetCertifications(userId int) ([]types.Certification, error) {
 	defer rows.Close()
 
 	certifications := make([]types.Certification, 0)
-	
+
 	for rows.Next() {
 		cert, err := scanRowIntoCertification(rows)
 		if err != nil {
@@ -53,8 +56,9 @@ func (s *Store) GetCertifications(userId int) ([]types.Certification, error) {
 	return certifications, nil
 }
 
-func (s *Store) CreateCertification(certification types.Certification) error {
-	_, err := s.db.Exec("INSERT INTO certifications (title, issuer, issueDate, expirationDate, credentialId, credentialUrl, userId) VALUES (?, ?, ?, ?, ?, ?, ?)",
+func (s *Store) CreateCertification(certification types.Certification) (types.Certification, error) {
+	result, err := s.db.Exec(
+		"INSERT INTO certifications (title, issuer, issueDate, expirationDate, credentialId, credentialUrl, userId) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		certification.Title,
 		certification.Issuer,
 		certification.IssueDate,
@@ -64,13 +68,20 @@ func (s *Store) CreateCertification(certification types.Certification) error {
 		certification.UserID,
 	)
 	if err != nil {
-		return err
+		return types.Certification{}, err
 	}
-	return nil
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return types.Certification{}, err
+	}
+
+	return s.GetCertificationById(int(id))
 }
 
-func (s *Store) UpdateCertification(id int, certification types.Certification) error {
-	_, err := s.db.Exec("UPDATE certifications SET title = ?, issuer = ?, issueDate = ?, expirationDate = ?, credentialId = ?, credentialUrl = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
+func (s *Store) UpdateCertification(id int, certification types.Certification) (types.Certification, error) {
+	_, err := s.db.Exec(
+		"UPDATE certifications SET title = ?, issuer = ?, issueDate = ?, expirationDate = ?, credentialId = ?, credentialUrl = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
 		certification.Title,
 		certification.Issuer,
 		certification.IssueDate,
@@ -80,21 +91,24 @@ func (s *Store) UpdateCertification(id int, certification types.Certification) e
 		id,
 	)
 	if err != nil {
-		return err
+		return types.Certification{}, err
 	}
-	return nil
+
+	return s.GetCertificationById(id)
 }
 
-func (s *Store) DeleteCertification(id int) error {
-	_, err := s.GetCertificationById(id)
+func (s *Store) DeleteCertification(id int) (types.Certification, error) {
+	cert, err := s.GetCertificationById(id)
 	if err != nil {
-		return err
+		return types.Certification{}, err
 	}
+
 	_, err = s.db.Exec("DELETE FROM certifications WHERE id = ?", id)
 	if err != nil {
-		return err
+		return types.Certification{}, err
 	}
-	return nil
+
+	return cert, nil
 }
 
 func scanRowIntoCertification(rows *sql.Rows) (types.Certification, error) {

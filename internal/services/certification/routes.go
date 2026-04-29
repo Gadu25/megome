@@ -21,6 +21,11 @@ type CertificationResponse struct {
 	Certificates []types.Certification `json:"certificates"`
 }
 
+type SingleCertResponse struct {
+	Message     string              `json:"message"`
+	Certificate types.Certification `json:"certificate"`
+}
+
 func NewHandler(certificationStore types.CertificationStore, userStore types.UserStore) *Handler {
 	return &Handler{certificationStore: certificationStore, userStore: userStore}
 }
@@ -84,7 +89,7 @@ func (h *Handler) handleCreateCertification(w http.ResponseWriter, r *http.Reque
 
 	// create certification
 	userID := auth.GetUserIDFromContext(r.Context())
-	err := h.certificationStore.CreateCertification(types.Certification{
+	cert, err := h.certificationStore.CreateCertification(types.Certification{
 		UserID:         userID,
 		Title:          payload.Title,
 		Issuer:         payload.Issuer,
@@ -93,18 +98,15 @@ func (h *Handler) handleCreateCertification(w http.ResponseWriter, r *http.Reque
 		CredentialId:   payload.CredentialId,
 		CredentialUrl:  payload.CredentialUrl,
 	})
+
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	certifications, err := h.certificationStore.GetCertifications(userID)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
-		return
-	}
-	resp := CertificationResponse{
-		Message:      "Certification fetched successfully",
-		Certificates: certifications,
+
+	resp := SingleCertResponse{
+		Message:     "Certification fetched successfully",
+		Certificate: cert,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
@@ -150,7 +152,7 @@ func (h *Handler) handleEditCertification(w http.ResponseWriter, r *http.Request
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.certificationStore.UpdateCertification(id, types.Certification{
+	cert, err := h.certificationStore.UpdateCertification(id, types.Certification{
 		Title:          payload.Title,
 		Issuer:         payload.Issuer,
 		IssueDate:      payload.IssueDate,
@@ -162,38 +164,30 @@ func (h *Handler) handleEditCertification(w http.ResponseWriter, r *http.Request
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	userID := auth.GetUserIDFromContext(r.Context())
-	certifications, err := h.certificationStore.GetCertifications(userID)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
-		return
-	}
-	resp := CertificationResponse{
-		Message:      "Certification fetched successfully",
-		Certificates: certifications,
+
+	resp := SingleCertResponse{
+		Message:     "Certification fetched successfully",
+		Certificate: cert,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 func (h *Handler) handleDeleteCertification(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.GetRequestId(r)
+
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.certificationStore.DeleteCertification(id)
+
+	cert, err := h.certificationStore.DeleteCertification(id)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	userID := auth.GetUserIDFromContext(r.Context())
-	certifications, err := h.certificationStore.GetCertifications(userID)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
-		return
-	}
-	resp := CertificationResponse{
-		Message:      "Certification fetched successfully",
-		Certificates: certifications,
+
+	resp := SingleCertResponse{
+		Message:     "Certification fetched successfully",
+		Certificate: cert,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }

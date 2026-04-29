@@ -158,9 +158,9 @@ type EducationPayload struct {
 
 type CertificationStore interface {
 	GetCertifications(userId int) ([]Certification, error)
-	CreateCertification(Certification) error
-	UpdateCertification(id int, certification Certification) error
-	DeleteCertification(id int) error
+	CreateCertification(Certification) (Certification, error)
+	UpdateCertification(id int, certification Certification) (Certification, error)
+	DeleteCertification(id int) (Certification, error)
 }
 
 type Certification struct {

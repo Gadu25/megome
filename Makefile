@@ -15,3 +15,6 @@ migrate-up:
 
 migrate-down:
 	@go run cmd/migrate/main.go down
+
+seed:
+	@go run cmd/seed/main.go

@@ -83,9 +83,9 @@ type MakeProfilePayload struct {
 
 type ExperienceStore interface {
 	GetExperiences(userId int) ([]Experience, error)
-	CreateExperience(Experience) error
-	UpdateExperience(id int, Experience Experience) error
-	DeleteExperience(id int) error
+	CreateExperience(Experience) (Experience, error)
+	UpdateExperience(id int, Experience Experience) (Experience, error)
+	DeleteExperience(id int) (Experience, error)
 }
 
 type Experience struct {
@@ -110,9 +110,9 @@ type ExperiencePayload struct {
 
 type SkillStore interface {
 	GetSkills(userId int) ([]Skill, error)
-	CreateSkill(Skill) error
-	UpdateSkill(id int, Skill Skill) error
-	DeleteSkill(id int) error
+	CreateSkill(Skill) (Skill, error)
+	UpdateSkill(id int, Skill Skill) (Skill, error)
+	DeleteSkill(id int) (Skill, error)
 }
 
 type Skill struct {
@@ -131,9 +131,9 @@ type SkillPayload struct {
 
 type EducationStore interface {
 	GetEducations(userId int) ([]Education, error)
-	CreateEducation(Education) error
-	UpdateEducation(id int, education Education) error
-	DeleteEducation(id int) error
+	CreateEducation(Education) (Education, error)
+	UpdateEducation(id int, education Education) (Education, error)
+	DeleteEducation(id int) (Education, error)
 }
 
 type Education struct {
@@ -208,9 +208,9 @@ type TechnologyPayload struct {
 
 type ProjectStore interface {
 	GetProjects(int) ([]Project, error)
-	CreateProject(Project) error
-	UpdateProject(int, Project) error
-	DeleteProject(int) error
+	CreateProject(Project) (Project, error)
+	UpdateProject(int, Project) (Project, error)
+	DeleteProject(int) (Project, error)
 }
 
 type Project struct {

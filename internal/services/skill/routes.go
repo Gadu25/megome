@@ -21,6 +21,11 @@ type SkillReponse struct {
 	Skills  []types.Skill `json:"skills"`
 }
 
+type SingleSkillResponse struct {
+	Message string      `json:"message"`
+	Skill   types.Skill `json:"skill"`
+}
+
 func NewHandler(skillStore types.SkillStore, userStore types.UserStore) *Handler {
 	return &Handler{skillStore: skillStore, userStore: userStore}
 }
@@ -62,7 +67,7 @@ func (h *Handler) handleCreateSkill(w http.ResponseWriter, r *http.Request) {
 
 	// create skill
 	userID := auth.GetUserIDFromContext(r.Context())
-	err := h.skillStore.CreateSkill(types.Skill{
+	skill, err := h.skillStore.CreateSkill(types.Skill{
 		UserID:      userID,
 		SkillName:   payload.SkillName,
 		Proficiency: payload.Proficiency,
@@ -73,16 +78,9 @@ func (h *Handler) handleCreateSkill(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	skills, err := h.skillStore.GetSkills(userID)
-
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
-	}
-
-	resp := SkillReponse{
+	resp := SingleSkillResponse{
 		Message: "Skill added successfully",
-		Skills:  skills,
+		Skill:   skill,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
@@ -107,26 +105,20 @@ func (h *Handler) handleUpdateSkill(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.skillStore.UpdateSkill(id, types.Skill{
+
+	skill, err := h.skillStore.UpdateSkill(id, types.Skill{
 		SkillName:   payload.SkillName,
 		Proficiency: payload.Proficiency,
 	})
+
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	userID := auth.GetUserIDFromContext(r.Context())
-	skills, err := h.skillStore.GetSkills(userID)
-
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
-	}
-
-	resp := SkillReponse{
+	resp := SingleSkillResponse{
 		Message: "Skill updated successfully",
-		Skills:  skills,
+		Skill:   skill,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
@@ -137,22 +129,15 @@ func (h *Handler) handleDeleteSkill(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.skillStore.DeleteSkill(id)
+	skill, err := h.skillStore.DeleteSkill(id)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	userID := auth.GetUserIDFromContext(r.Context())
-	skills, err := h.skillStore.GetSkills(userID)
 
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
-	}
-
-	resp := SkillReponse{
+	resp := SingleSkillResponse{
 		Message: "Skill deleted successfully",
-		Skills:  skills,
+		Skill:   skill,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }

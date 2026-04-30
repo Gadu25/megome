@@ -21,6 +21,11 @@ type ExperienceResponse struct {
 	Experience []types.Experience `json:"experience"`
 }
 
+type SingleExpResponse struct {
+	Message    string           `json:"message"`
+	Experience types.Experience `json:"experience"`
+}
+
 func NewHandler(experienceStore types.ExperienceStore, userStore types.UserStore) *Handler {
 	return &Handler{experienceStore: experienceStore, userStore: userStore}
 }
@@ -72,7 +77,7 @@ func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request)
 
 	// create experience
 	userID := auth.GetUserIDFromContext(r.Context())
-	err := h.experienceStore.CreateExperience(types.Experience{
+	exp, err := h.experienceStore.CreateExperience(types.Experience{
 		UserID:      userID,
 		Title:       payload.Title,
 		Company:     payload.Company,
@@ -85,22 +90,14 @@ func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	experiences, err := h.experienceStore.GetExperiences(userID)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
-		return
-	}
-	resp := ExperienceResponse{
+	resp := SingleExpResponse{
 		Message:    "Experience created successfully",
-		Experience: experiences,
+		Experience: exp,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleEditExperience(w http.ResponseWriter, r *http.Request) {
-	// body, _ := io.ReadAll(r.Body)
-	// fmt.Println(string(body)) // check exactly what the server received
-	// get JSON payload
 	endDateStr := r.FormValue("endDate")
 
 	var endDate *string
@@ -129,7 +126,7 @@ func (h *Handler) handleEditExperience(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.experienceStore.UpdateExperience(id, types.Experience{
+	exp, err := h.experienceStore.UpdateExperience(id, types.Experience{
 		Title:       payload.Title,
 		Company:     payload.Company,
 		StartDate:   payload.StartDate,
@@ -140,15 +137,10 @@ func (h *Handler) handleEditExperience(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	userID := auth.GetUserIDFromContext(r.Context())
-	experiences, err := h.experienceStore.GetExperiences(userID)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
-		return
-	}
-	resp := ExperienceResponse{
+
+	resp := SingleExpResponse{
 		Message:    "Experience updated successfully",
-		Experience: experiences,
+		Experience: exp,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
@@ -159,21 +151,15 @@ func (h *Handler) handleDeleteExperience(w http.ResponseWriter, r *http.Request)
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.experienceStore.DeleteExperience(id)
+	exp, err := h.experienceStore.DeleteExperience(id)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	userID := auth.GetUserIDFromContext(r.Context())
-	experiences, err := h.experienceStore.GetExperiences(userID)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
-		return
-	}
-	resp := ExperienceResponse{
+	resp := SingleExpResponse{
 		Message:    "Experience deleted successfully",
-		Experience: experiences,
+		Experience: exp,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }

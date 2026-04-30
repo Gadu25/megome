@@ -21,6 +21,11 @@ type EducationResponse struct {
 	Education []types.Education `json:"education"`
 }
 
+type SingleEducResponse struct {
+	Message   string          `json:"message"`
+	Education types.Education `json:"education"`
+}
+
 func NewHandler(educationStore types.EducationStore, userStore types.UserStore) *Handler {
 	return &Handler{educationStore: educationStore, userStore: userStore}
 }
@@ -64,7 +69,7 @@ func (h *Handler) handleCreateEducation(w http.ResponseWriter, r *http.Request) 
 
 	// create education
 	userID := auth.GetUserIDFromContext(r.Context())
-	err := h.educationStore.CreateEducation(types.Education{
+	educ, err := h.educationStore.CreateEducation(types.Education{
 		UserID:       userID,
 		School:       payload.School,
 		Degree:       payload.Degree,
@@ -77,14 +82,9 @@ func (h *Handler) handleCreateEducation(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	educations, err := h.educationStore.GetEducations(userID)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
-		return
-	}
-	resp := EducationResponse{
+	resp := SingleEducResponse{
 		Message:   "Education added successfully",
-		Education: educations,
+		Education: educ,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
@@ -111,7 +111,8 @@ func (h *Handler) handleEditEducation(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.educationStore.UpdateEducation(id, types.Education{
+
+	educ, err := h.educationStore.UpdateEducation(id, types.Education{
 		School:       payload.School,
 		Degree:       payload.Degree,
 		FieldOfStudy: payload.FieldOfStudy,
@@ -123,15 +124,9 @@ func (h *Handler) handleEditEducation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := auth.GetUserIDFromContext(r.Context())
-	educations, err := h.educationStore.GetEducations(userID)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
-		return
-	}
-	resp := EducationResponse{
+	resp := SingleEducResponse{
 		Message:   "Education updated successfully",
-		Education: educations,
+		Education: educ,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
@@ -142,21 +137,16 @@ func (h *Handler) handleDeleteEducation(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.educationStore.DeleteEducation(id)
+
+	educ, err := h.educationStore.DeleteEducation(id)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	userID := auth.GetUserIDFromContext(r.Context())
-	educations, err := h.educationStore.GetEducations(userID)
-	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
-		return
-	}
-	resp := EducationResponse{
+	resp := SingleEducResponse{
 		Message:   "Education deleted successfully",
-		Education: educations,
+		Education: educ,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }

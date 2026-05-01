@@ -17,8 +17,13 @@ type Handler struct {
 }
 
 type ExperienceResponse struct {
-	Message string             `json:"message"`
-	Data    []types.Experience `json:"data"`
+	Message    string             `json:"message"`
+	Experience []types.Experience `json:"experience"`
+}
+
+type SingleExpResponse struct {
+	Message    string           `json:"message"`
+	Experience types.Experience `json:"experience"`
 }
 
 func NewHandler(experienceStore types.ExperienceStore, userStore types.UserStore) *Handler {
@@ -40,18 +45,27 @@ func (h *Handler) handleViewExperiences(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	resp := ExperienceResponse{
-		Message: "Experience fetched successfully",
-		Data:    experiences,
+		Message:    "Experience fetched successfully",
+		Experience: experiences,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	var payload types.ExperiencePayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	endDateStr := r.FormValue("endDate")
+
+	var endDate *string
+	if endDateStr != "" {
+		endDate = &endDateStr
+	}
+
+	payload := types.ExperiencePayload{
+		Title:       r.FormValue("title"),
+		Company:     r.FormValue("company"),
+		StartDate:   r.FormValue("startDate"),
+		EndDate:     endDate,
+		Description: r.FormValue("description"),
 	}
 
 	// validate the payload
@@ -63,7 +77,7 @@ func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request)
 
 	// create experience
 	userID := auth.GetUserIDFromContext(r.Context())
-	err := h.experienceStore.CreateExperience(types.Experience{
+	exp, err := h.experienceStore.CreateExperience(types.Experience{
 		UserID:      userID,
 		Title:       payload.Title,
 		Company:     payload.Company,
@@ -75,17 +89,28 @@ func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request)
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Experience is successfully created"})
+
+	resp := SingleExpResponse{
+		Message:    "Experience created successfully",
+		Experience: exp,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleEditExperience(w http.ResponseWriter, r *http.Request) {
-	// body, _ := io.ReadAll(r.Body)
-	// fmt.Println(string(body)) // check exactly what the server received
-	// get JSON payload
-	var payload types.ExperiencePayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	endDateStr := r.FormValue("endDate")
+
+	var endDate *string
+	if endDateStr != "" {
+		endDate = &endDateStr
+	}
+
+	payload := types.ExperiencePayload{
+		Title:       r.FormValue("title"),
+		Company:     r.FormValue("company"),
+		StartDate:   r.FormValue("startDate"),
+		EndDate:     endDate,
+		Description: r.FormValue("description"),
 	}
 
 	// validate the payload
@@ -101,7 +126,7 @@ func (h *Handler) handleEditExperience(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.experienceStore.UpdateExperience(id, types.Experience{
+	exp, err := h.experienceStore.UpdateExperience(id, types.Experience{
 		Title:       payload.Title,
 		Company:     payload.Company,
 		StartDate:   payload.StartDate,
@@ -112,7 +137,12 @@ func (h *Handler) handleEditExperience(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Experience is successfully updated"})
+
+	resp := SingleExpResponse{
+		Message:    "Experience updated successfully",
+		Experience: exp,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleDeleteExperience(w http.ResponseWriter, r *http.Request) {
@@ -121,10 +151,15 @@ func (h *Handler) handleDeleteExperience(w http.ResponseWriter, r *http.Request)
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.experienceStore.DeleteExperience(id)
+	exp, err := h.experienceStore.DeleteExperience(id)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Experience is successfully deleted"})
+
+	resp := SingleExpResponse{
+		Message:    "Experience deleted successfully",
+		Experience: exp,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }

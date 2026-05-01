@@ -22,11 +22,13 @@ func (s *Store) GetProfile(userId int) (*types.Profile, error) {
 func (s *Store) MakeProfile(profile types.Profile) error {
 	existing, err := s.GetProfile(profile.UserID)
 	if err != nil {
-		_, err = s.db.Exec("INSERT INTO profiles (userId, bio, firstName, lastName, phone, website, location, profileImage) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+		_, err = s.db.Exec("INSERT INTO profiles (userId, bio, firstName, lastName, title, birthday, phone, website, location, profileImage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 			profile.UserID,
 			profile.Bio,
 			profile.FirstName,
 			profile.LastName,
+			profile.Title,
+			profile.Birthday,
 			profile.Phone,
 			profile.Website,
 			profile.Location,
@@ -36,17 +38,34 @@ func (s *Store) MakeProfile(profile types.Profile) error {
 			return err
 		}
 	}
+
 	if existing != nil {
-		_, err = s.db.Exec("UPDATE profiles SET bio = ?, firstName = ?, lastName = ?,  phone = ?, website = ?, location = ?, profileImage = ?, updatedAt = CURRENT_TIMESTAMP WHERE userId = ?",
+		query := `
+			UPDATE profiles 
+			SET bio = ?, firstName = ?, lastName = ?, title = ?, birthday = ?, phone = ?, website = ?, location = ?, updatedAt = CURRENT_TIMESTAMP
+		`
+
+		args := []any{
 			profile.Bio,
 			profile.FirstName,
 			profile.LastName,
+			profile.Title,
+			profile.Birthday,
 			profile.Phone,
 			profile.Website,
 			profile.Location,
-			profile.ProfileImage,
-			profile.UserID,
-		)
+		}
+
+		// only include if provided
+		if profile.ProfileImage != "" {
+			query += ", profileImage = ?"
+			args = append(args, profile.ProfileImage)
+		}
+
+		query += " WHERE userId = ?"
+		args = append(args, profile.UserID)
+
+		_, err = s.db.Exec(query, args...)
 		if err != nil {
 			return err
 		}
@@ -64,6 +83,8 @@ func scanRowIntoProfile(row *sql.Row) (*types.Profile, error) {
 		&profile.Bio,
 		&profile.FirstName,
 		&profile.LastName,
+		&profile.Title,
+		&profile.Birthday,
 		&profile.Phone,
 		&profile.Website,
 		&profile.Location,

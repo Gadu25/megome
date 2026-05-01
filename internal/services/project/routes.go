@@ -17,8 +17,13 @@ type Handler struct {
 }
 
 type ProjectResponse struct {
-	Message string          `json:"message"`
-	Data    []types.Project `json:"project"`
+	Message  string          `json:"message"`
+	Projects []types.Project `json:"projects"`
+}
+
+type SingleProjResponse struct {
+	Message string        `json:"message"`
+	Project types.Project `json:"project"`
 }
 
 func NewHandler(projectStore types.ProjectStore, userStore types.UserStore) *Handler {
@@ -40,18 +45,19 @@ func (h *Handler) handleViewProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp := ProjectResponse{
-		Message: "Project fetched successfully",
-		Data:    projects,
+		Message:  "Project fetched successfully",
+		Projects: projects,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	var payload types.ProjectPayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	payload := types.ProjectPayload{
+		Title:       r.FormValue("title"),
+		Description: r.FormValue("description"),
+		Link:        r.FormValue("link"),
+		GithubLink:  r.FormValue("githubLink"),
 	}
 
 	// validate the payload
@@ -63,28 +69,33 @@ func (h *Handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 
 	// create project
 	userID := auth.GetUserIDFromContext(r.Context())
-	err := h.projectStore.CreateProject(types.Project{
+	project, err := h.projectStore.CreateProject(types.Project{
 		UserID:      userID,
 		Title:       payload.Title,
 		Description: payload.Description,
 		Link:        payload.Link,
 		GithubLink:  payload.GithubLink,
 	})
+
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "Project is successfully created",
-	})
+
+	resp := SingleProjResponse{
+		Message: "Project created successfully",
+		Project: project,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	var payload types.ProjectPayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	payload := types.ProjectPayload{
+		Title:       r.FormValue("title"),
+		Description: r.FormValue("description"),
+		Link:        r.FormValue("link"),
+		GithubLink:  r.FormValue("githubLink"),
 	}
 
 	// validate the payload
@@ -100,7 +111,7 @@ func (h *Handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.projectStore.UpdateProject(id, types.Project{
+	project, err := h.projectStore.UpdateProject(id, types.Project{
 		Title:       payload.Title,
 		Description: payload.Description,
 		Link:        payload.Link,
@@ -110,9 +121,12 @@ func (h *Handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "Project is successfully updated",
-	})
+
+	resp := SingleProjResponse{
+		Message: "Project updated successfully",
+		Project: project,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
@@ -121,12 +135,15 @@ func (h *Handler) handleDeleteProject(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	err = h.projectStore.DeleteProject(id)
+	project, err := h.projectStore.DeleteProject(id)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "Project is successfully deleted",
-	})
+
+	resp := SingleProjResponse{
+		Message: "Project deleted successfully",
+		Project: project,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }

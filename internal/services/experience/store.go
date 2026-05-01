@@ -13,9 +13,10 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) GetExperienceById(id int) (*types.Experience, error) {
+func (s *Store) GetExperienceById(id int) (types.Experience, error) {
 	row := s.db.QueryRow("SELECT * FROM experiences WHERE id = ?", id)
-	experience := new(types.Experience)
+
+	var experience types.Experience
 	err := row.Scan(
 		&experience.ID,
 		&experience.UserID,
@@ -27,9 +28,11 @@ func (s *Store) GetExperienceById(id int) (*types.Experience, error) {
 		&experience.CreatedAt,
 		&experience.UpdatedAt,
 	)
+
 	if err != nil {
-		return nil, err
+		return types.Experience{}, err
 	}
+
 	return experience, nil
 }
 
@@ -43,7 +46,7 @@ func (s *Store) GetExperiences(userID int) ([]types.Experience, error) {
 	}
 	defer rows.Close()
 
-	var experiences []types.Experience
+	experiences := make([]types.Experience, 0)
 
 	for rows.Next() {
 		exp, err := scanRowIntoExperience(rows)
@@ -60,8 +63,8 @@ func (s *Store) GetExperiences(userID int) ([]types.Experience, error) {
 	return experiences, nil
 }
 
-func (s *Store) CreateExperience(experience types.Experience) error {
-	_, err := s.db.Exec("INSERT INTO experiences (userId, title, company, startDate, endDate, description) VALUES (?, ?, ?, ?, ?, ?)",
+func (s *Store) CreateExperience(experience types.Experience) (types.Experience, error) {
+	result, err := s.db.Exec("INSERT INTO experiences (userId, title, company, startDate, endDate, description) VALUES (?, ?, ?, ?, ?, ?)",
 		experience.UserID,
 		experience.Title,
 		experience.Company,
@@ -70,12 +73,19 @@ func (s *Store) CreateExperience(experience types.Experience) error {
 		experience.Description,
 	)
 	if err != nil {
-		return err
+		return types.Experience{}, err
 	}
-	return nil
+
+	id, err := result.LastInsertId()
+
+	if err != nil {
+		return types.Experience{}, err
+	}
+
+	return s.GetExperienceById(int(id))
 }
 
-func (s *Store) UpdateExperience(id int, experience types.Experience) error {
+func (s *Store) UpdateExperience(id int, experience types.Experience) (types.Experience, error) {
 	_, err := s.db.Exec("UPDATE experiences SET title = ?, company = ?, startDate = ?, endDate = ?, description = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
 		experience.Title,
 		experience.Company,
@@ -85,21 +95,24 @@ func (s *Store) UpdateExperience(id int, experience types.Experience) error {
 		id,
 	)
 	if err != nil {
-		return err
+		return types.Experience{}, err
 	}
-	return nil
+
+	return s.GetExperienceById(id)
 }
 
-func (s *Store) DeleteExperience(id int) error {
-	_, err := s.GetExperienceById(id)
+func (s *Store) DeleteExperience(id int) (types.Experience, error) {
+	cert, err := s.GetExperienceById(id)
+
 	if err != nil {
-		return err
+		return types.Experience{}, err
 	}
+
 	_, err = s.db.Exec("DELETE FROM experiences WHERE id = ?", id)
 	if err != nil {
-		return err
+		return types.Experience{}, err
 	}
-	return nil
+	return cert, nil
 }
 
 func scanRowIntoExperience(rows *sql.Rows) (types.Experience, error) {

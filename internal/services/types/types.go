@@ -35,8 +35,8 @@ type User struct {
 }
 
 type RegisterUserPayload struct {
-	Email     string `json:"email" validate:"required,email"`
-	Password  string `json:"password" validate:"required,min=3,max=130"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=3,max=130"`
 }
 
 type LoginUserPayload struct {
@@ -59,6 +59,8 @@ type Profile struct {
 	UserID       int    `json:"userId"`
 	FirstName    string `json:"firstName"`
 	LastName     string `json:"lastName"`
+	Title        string `json:"title"`
+	Birthday     string `json:"birthday"`
 	Bio          string `json:"bio"`
 	Phone        string `json:"phone"`
 	Website      string `json:"website"`
@@ -72,6 +74,8 @@ type MakeProfilePayload struct {
 	Bio       string `json:"bio"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName"`
+	Birthday  string `json:"birthday"`
+	Title     string `json:"title"`
 	Phone     string `json:"phone"`
 	Website   string `json:"website"`
 	Location  string `json:"location"`
@@ -79,9 +83,9 @@ type MakeProfilePayload struct {
 
 type ExperienceStore interface {
 	GetExperiences(userId int) ([]Experience, error)
-	CreateExperience(Experience) error
-	UpdateExperience(id int, Experience Experience) error
-	DeleteExperience(id int) error
+	CreateExperience(Experience) (Experience, error)
+	UpdateExperience(id int, Experience Experience) (Experience, error)
+	DeleteExperience(id int) (Experience, error)
 }
 
 type Experience struct {
@@ -106,9 +110,9 @@ type ExperiencePayload struct {
 
 type SkillStore interface {
 	GetSkills(userId int) ([]Skill, error)
-	CreateSkill(Skill) error
-	UpdateSkill(id int, Skill Skill) error
-	DeleteSkill(id int) error
+	CreateSkill(Skill) (Skill, error)
+	UpdateSkill(id int, Skill Skill) (Skill, error)
+	DeleteSkill(id int) (Skill, error)
 }
 
 type Skill struct {
@@ -127,9 +131,9 @@ type SkillPayload struct {
 
 type EducationStore interface {
 	GetEducations(userId int) ([]Education, error)
-	CreateEducation(Education) error
-	UpdateEducation(id int, education Education) error
-	DeleteEducation(id int) error
+	CreateEducation(Education) (Education, error)
+	UpdateEducation(id int, education Education) (Education, error)
+	DeleteEducation(id int) (Education, error)
 }
 
 type Education struct {
@@ -154,9 +158,9 @@ type EducationPayload struct {
 
 type CertificationStore interface {
 	GetCertifications(userId int) ([]Certification, error)
-	CreateCertification(Certification) error
-	UpdateCertification(id int, certification Certification) error
-	DeleteCertification(id int) error
+	CreateCertification(Certification) (Certification, error)
+	UpdateCertification(id int, certification Certification) (Certification, error)
+	DeleteCertification(id int) (Certification, error)
 }
 
 type Certification struct {
@@ -204,18 +208,20 @@ type TechnologyPayload struct {
 
 type ProjectStore interface {
 	GetProjects(int) ([]Project, error)
-	CreateProject(Project) error
-	UpdateProject(int, Project) error
-	DeleteProject(int) error
+	CreateProject(Project) (Project, error)
+	UpdateProject(int, Project) (Project, error)
+	DeleteProject(int) (Project, error)
 }
 
 type Project struct {
-	ID          int    `json:"id"`
-	UserID      int    `json:"userId"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Link        string `json:"link"`
-	GithubLink  string `json:"githubLink"`
+	ID          int     `json:"id"`
+	UserID      int     `json:"userId"`
+	Title       string  `json:"title"`
+	Description string  `json:"description"`
+	Link        string  `json:"link"`
+	GithubLink  string  `json:"githubLink"`
+	CreatedAt   string  `json:"createdAt"`
+	UpdatedAt   *string `json:"updatedAt"`
 }
 
 type ProjectPayload struct {

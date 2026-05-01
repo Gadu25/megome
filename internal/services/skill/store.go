@@ -13,9 +13,10 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) GetSkillById(id int) (*types.Skill, error) {
+func (s *Store) GetSkillById(id int) (types.Skill, error) {
 	row := s.db.QueryRow("SELECT * FROM skills WHERE id = ?", id)
-	skill := new(types.Skill)
+
+	var skill types.Skill
 	err := row.Scan(
 		&skill.ID,
 		&skill.UserID,
@@ -24,9 +25,11 @@ func (s *Store) GetSkillById(id int) (*types.Skill, error) {
 		&skill.CreatedAt,
 		&skill.UpdatedAt,
 	)
+
 	if err != nil {
-		return nil, err
+		return types.Skill{}, err
 	}
+
 	return skill, nil
 }
 
@@ -40,7 +43,7 @@ func (s *Store) GetSkills(userID int) ([]types.Skill, error) {
 	}
 	defer rows.Close()
 
-	var skills []types.Skill
+	skills := make([]types.Skill, 0)
 
 	for rows.Next() {
 		skill, err := scanRowIntoSkill(rows)
@@ -57,40 +60,51 @@ func (s *Store) GetSkills(userID int) ([]types.Skill, error) {
 	return skills, nil
 }
 
-func (s *Store) CreateSkill(skill types.Skill) error {
-	_, err := s.db.Exec("INSERT INTO skills (userId, skillName, proficiency) VALUES (?, ?, ?)",
+func (s *Store) CreateSkill(skill types.Skill) (types.Skill, error) {
+	result, err := s.db.Exec("INSERT INTO skills (userId, skillName, proficiency) VALUES (?, ?, ?)",
 		skill.UserID,
 		skill.SkillName,
 		skill.Proficiency,
 	)
+
 	if err != nil {
-		return err
+		return types.Skill{}, err
 	}
-	return nil
+
+	id, err := result.LastInsertId()
+
+	if err != nil {
+		return types.Skill{}, err
+	}
+
+	return s.GetSkillById(int(id))
 }
 
-func (s *Store) UpdateSkill(id int, skill types.Skill) error {
+func (s *Store) UpdateSkill(id int, skill types.Skill) (types.Skill, error) {
 	_, err := s.db.Exec("UPDATE skills SET skillName = ?, proficiency = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
 		skill.SkillName,
 		skill.Proficiency,
 		id,
 	)
 	if err != nil {
-		return err
+		return types.Skill{}, err
 	}
-	return nil
+	return s.GetSkillById(id)
 }
 
-func (s *Store) DeleteSkill(id int) error {
-	_, err := s.GetSkillById(id)
+func (s *Store) DeleteSkill(id int) (types.Skill, error) {
+	skill, err := s.GetSkillById(id)
+
 	if err != nil {
-		return err
+		return types.Skill{}, err
 	}
+
 	_, err = s.db.Exec("DELETE FROM skills WHERE id = ?", id)
 	if err != nil {
-		return err
+		return types.Skill{}, err
 	}
-	return nil
+
+	return skill, nil
 }
 
 func scanRowIntoSkill(rows *sql.Rows) (types.Skill, error) {

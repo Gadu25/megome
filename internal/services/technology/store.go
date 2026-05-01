@@ -38,7 +38,7 @@ func (s *Store) GetTechnologies(userID int) ([]types.Technology, error) {
 	}
 	defer rows.Close()
 
-	var technologies []types.Technology
+	technologies := make([]types.Technology, 0)
 
 	for rows.Next() {
 		tech, err := scanRowIntoTechnology(rows)

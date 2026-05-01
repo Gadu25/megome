@@ -13,9 +13,10 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) GetEducationById(id int) (*types.Education, error) {
-	row := s.db.QueryRow("SELECT id, userId, school, degree, fieldOfStudy, startDate, endDate FROM educations WHERE id = ?", id)
-	education := new(types.Education)
+func (s *Store) GetEducationById(id int) (types.Education, error) {
+	row := s.db.QueryRow("SELECT id, userId, school, degree, fieldOfStudy, startDate, endDate, createdAt, updatedAt FROM education WHERE id = ?", id)
+
+	var education types.Education
 	err := row.Scan(
 		&education.ID,
 		&education.UserID,
@@ -23,17 +24,21 @@ func (s *Store) GetEducationById(id int) (*types.Education, error) {
 		&education.Degree,
 		&education.FieldOfStudy,
 		&education.StartDate,
+		&education.EndDate,
+		&education.CreatedAt,
 		&education.UpdatedAt,
 	)
+
 	if err != nil {
-		return nil, err
+		return types.Education{}, err
 	}
+
 	return education, nil
 }
 
 func (s *Store) GetEducations(userID int) ([]types.Education, error) {
 	rows, err := s.db.Query(
-		"SELECT id, school, degree, fieldOfStudy, startDate, endDate from educations WHERE userId = ?",
+		"SELECT id, school, degree, fieldOfStudy, startDate, endDate from education WHERE userId = ?",
 		userID,
 	)
 	if err != nil {
@@ -41,7 +46,7 @@ func (s *Store) GetEducations(userID int) ([]types.Education, error) {
 	}
 	defer rows.Close()
 
-	var educations []types.Education
+	educations := make([]types.Education, 0)
 
 	for rows.Next() {
 		educ, err := scanRowIntoEducation(rows)
@@ -53,8 +58,8 @@ func (s *Store) GetEducations(userID int) ([]types.Education, error) {
 	return educations, nil
 }
 
-func (s *Store) CreateEducation(education types.Education) error {
-	_, err := s.db.Exec("INSERT INTO educations (userId, school, degree, fieldOfStudy, startDate, endDate) VALUES(?, ?, ?, ?, ?, ?)",
+func (s *Store) CreateEducation(education types.Education) (types.Education, error) {
+	result, err := s.db.Exec("INSERT INTO education (userId, school, degree, fieldOfStudy, startDate, endDate) VALUES(?, ?, ?, ?, ?, ?)",
 		education.UserID,
 		education.School,
 		education.Degree,
@@ -63,13 +68,20 @@ func (s *Store) CreateEducation(education types.Education) error {
 		education.EndDate,
 	)
 	if err != nil {
-		return err
+		return types.Education{}, err
 	}
-	return nil
+
+	id, err := result.LastInsertId()
+
+	if err != nil {
+		return types.Education{}, err
+	}
+
+	return s.GetEducationById(int(id))
 }
 
-func (s *Store) UpdateEducation(id int, education types.Education) error {
-	_, err := s.db.Exec("UPDATE educations SET school = ?, degree = ?, fieldOfStudy = ?, startDate = ?, endDate = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
+func (s *Store) UpdateEducation(id int, education types.Education) (types.Education, error) {
+	_, err := s.db.Exec("UPDATE education SET school = ?, degree = ?, fieldOfStudy = ?, startDate = ?, endDate = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
 		education.School,
 		education.Degree,
 		education.FieldOfStudy,
@@ -78,21 +90,24 @@ func (s *Store) UpdateEducation(id int, education types.Education) error {
 		id,
 	)
 	if err != nil {
-		return err
+		return types.Education{}, err
 	}
-	return nil
+
+	return s.GetEducationById(id)
 }
 
-func (s *Store) DeleteEducation(id int) error {
-	_, err := s.GetEducationById(id)
+func (s *Store) DeleteEducation(id int) (types.Education, error) {
+	cert, err := s.GetEducationById(id)
+
 	if err != nil {
-		return err
+		return types.Education{}, err
 	}
-	_, err = s.db.Exec("DELETE FROM educations WHERE id = ?", id)
+
+	_, err = s.db.Exec("DELETE FROM education WHERE id = ?", id)
 	if err != nil {
-		return err
+		return types.Education{}, err
 	}
-	return nil
+	return cert, nil
 }
 
 func scanRowIntoEducation(rows *sql.Rows) (types.Education, error) {

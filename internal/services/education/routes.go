@@ -17,8 +17,13 @@ type Handler struct {
 }
 
 type EducationResponse struct {
-	Message string            `json:"message"`
-	Data    []types.Education `json:"data"`
+	Message   string            `json:"message"`
+	Education []types.Education `json:"education"`
+}
+
+type SingleEducResponse struct {
+	Message   string          `json:"message"`
+	Education types.Education `json:"education"`
 }
 
 func NewHandler(educationStore types.EducationStore, userStore types.UserStore) *Handler {
@@ -40,17 +45,19 @@ func (h *Handler) handleViewEducation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp := EducationResponse{
-		Message: "Education fetched successfully",
-		Data:    educations,
+		Message:   "Education fetched successfully",
+		Education: educations,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 func (h *Handler) handleCreateEducation(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	var payload types.EducationPayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	payload := types.EducationPayload{
+		School:       r.FormValue("school"),
+		Degree:       r.FormValue("degree"),
+		FieldOfStudy: r.FormValue("fieldOfStudy"),
+		StartDate:    r.FormValue("startDate"),
+		EndDate:      r.FormValue("endDate"),
 	}
 
 	// validate the payload
@@ -62,9 +69,10 @@ func (h *Handler) handleCreateEducation(w http.ResponseWriter, r *http.Request) 
 
 	// create education
 	userID := auth.GetUserIDFromContext(r.Context())
-	err := h.educationStore.CreateEducation(types.Education{
+	educ, err := h.educationStore.CreateEducation(types.Education{
 		UserID:       userID,
 		School:       payload.School,
+		Degree:       payload.Degree,
 		FieldOfStudy: payload.FieldOfStudy,
 		StartDate:    payload.StartDate,
 		EndDate:      payload.EndDate,
@@ -73,16 +81,21 @@ func (h *Handler) handleCreateEducation(w http.ResponseWriter, r *http.Request) 
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "Education is successfully created",
-	})
+
+	resp := SingleEducResponse{
+		Message:   "Education added successfully",
+		Education: educ,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 func (h *Handler) handleEditEducation(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	var payload types.EducationPayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	payload := types.EducationPayload{
+		School:       r.FormValue("school"),
+		Degree:       r.FormValue("degree"),
+		FieldOfStudy: r.FormValue("fieldOfStudy"),
+		StartDate:    r.FormValue("startDate"),
+		EndDate:      r.FormValue("endDate"),
 	}
 
 	// validate the payload
@@ -98,8 +111,10 @@ func (h *Handler) handleEditEducation(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.educationStore.UpdateEducation(id, types.Education{
+
+	educ, err := h.educationStore.UpdateEducation(id, types.Education{
 		School:       payload.School,
+		Degree:       payload.Degree,
 		FieldOfStudy: payload.FieldOfStudy,
 		StartDate:    payload.StartDate,
 		EndDate:      payload.EndDate,
@@ -108,18 +123,30 @@ func (h *Handler) handleEditEducation(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Education is successfully updated"})
+
+	resp := SingleEducResponse{
+		Message:   "Education updated successfully",
+		Education: educ,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
+
 func (h *Handler) handleDeleteEducation(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.GetRequestId(r)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.educationStore.DeleteEducation(id)
+
+	educ, err := h.educationStore.DeleteEducation(id)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Education is successfully deleted"})
+
+	resp := SingleEducResponse{
+		Message:   "Education deleted successfully",
+		Education: educ,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }

@@ -18,7 +18,12 @@ type Handler struct {
 
 type SkillReponse struct {
 	Message string        `json:"message"`
-	Data    []types.Skill `json:"data"`
+	Skills  []types.Skill `json:"skills"`
+}
+
+type SingleSkillResponse struct {
+	Message string      `json:"message"`
+	Skill   types.Skill `json:"skill"`
 }
 
 func NewHandler(skillStore types.SkillStore, userStore types.UserStore) *Handler {
@@ -41,17 +46,16 @@ func (h *Handler) handleViewSkills(w http.ResponseWriter, r *http.Request) {
 	}
 	resp := SkillReponse{
 		Message: "Skills fetched successfully",
-		Data:    skills,
+		Skills:  skills,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleCreateSkill(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	var payload types.SkillPayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	payload := types.SkillPayload{
+		SkillName:   r.FormValue("skillName"),
+		Proficiency: r.FormValue("proficiency"),
 	}
 
 	// validate the payload
@@ -63,24 +67,29 @@ func (h *Handler) handleCreateSkill(w http.ResponseWriter, r *http.Request) {
 
 	// create skill
 	userID := auth.GetUserIDFromContext(r.Context())
-	err := h.skillStore.CreateSkill(types.Skill{
+	skill, err := h.skillStore.CreateSkill(types.Skill{
 		UserID:      userID,
 		SkillName:   payload.SkillName,
 		Proficiency: payload.Proficiency,
 	})
+
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Skill is successfully created"})
+
+	resp := SingleSkillResponse{
+		Message: "Skill added successfully",
+		Skill:   skill,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleUpdateSkill(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	var payload types.SkillPayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	payload := types.SkillPayload{
+		SkillName:   r.FormValue("skillName"),
+		Proficiency: r.FormValue("proficiency"),
 	}
 
 	// validate the payload
@@ -96,15 +105,22 @@ func (h *Handler) handleUpdateSkill(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.skillStore.UpdateSkill(id, types.Skill{
+
+	skill, err := h.skillStore.UpdateSkill(id, types.Skill{
 		SkillName:   payload.SkillName,
 		Proficiency: payload.Proficiency,
 	})
+
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Skill is successfully updated"})
+
+	resp := SingleSkillResponse{
+		Message: "Skill updated successfully",
+		Skill:   skill,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleDeleteSkill(w http.ResponseWriter, r *http.Request) {
@@ -113,10 +129,15 @@ func (h *Handler) handleDeleteSkill(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	err = h.skillStore.DeleteSkill(id)
+	skill, err := h.skillStore.DeleteSkill(id)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "Skill is successfully deleted"})
+
+	resp := SingleSkillResponse{
+		Message: "Skill deleted successfully",
+		Skill:   skill,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
 }

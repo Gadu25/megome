@@ -231,6 +231,24 @@ type ProjectPayload struct {
 	GithubLink  string `json:"githubLink"`
 }
 
+type ProjectImageStore interface {
+	GetProjectImageByID(int) (ProjectImage, error)
+	GetProjectImages(int) ([]ProjectImage, error)
+	AddProjectImage(ProjectImage) (ProjectImage, error)
+	DeleteProjectImage(int) error
+	SetProjectCover(int, ProjectImage) (ProjectImage, error)
+}
+
+type ProjectImage struct {
+	ID        int
+	ProjectID int
+	URL       string
+	Type      string // "cover" | "screenshot" | "demo"
+	Position  *int
+	CreatedAt string
+	UpdatedAt string
+}
+
 type ProjectTechStore interface {
 	CreateProjectTech(ProjectTech) error
 	DelteProjectTech(int) error

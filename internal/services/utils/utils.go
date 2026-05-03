@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -107,4 +108,8 @@ func GetFiletypeExtension(fileType string) (string, error) {
 func GetPublicFile(path string) string {
 	baseUrl := config.Envs.R2PublicUrl
 	return fmt.Sprintf("%s/%s", baseUrl, path)
+}
+
+func GenerateUUID() string {
+	return uuid.NewString()
 }

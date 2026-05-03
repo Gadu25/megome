@@ -27,8 +27,8 @@ type SingleImageResponse struct {
 	Image   types.ProjectImage `json:"image"`
 }
 
-func NewHandler(imageStore types.ProjectImageStore, userStore types.UserStore) *Handler {
-	return &Handler{imageStore: imageStore, userStore: userStore}
+func NewHandler(imageStore types.ProjectImageStore, userStore types.UserStore, r2Client *storage.R2Client) *Handler {
+	return &Handler{imageStore: imageStore, userStore: userStore, r2Client: r2Client}
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
@@ -106,8 +106,8 @@ func (h *Handler) handleUploadImage(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	key, err := storage.GenerateKey(
-		fmt.Sprintf("projects/%d", projectId),
-		imgType,
+		fmt.Sprintf("projects/%d/%s", projectId, imgType),
+		utils.GenerateUUID(),
 		fileType,
 	)
 	if err != nil {

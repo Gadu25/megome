@@ -242,13 +242,13 @@ type ProjectImageStore interface {
 }
 
 type ProjectImage struct {
-	ID        int
-	ProjectID int
-	URL       string
-	Type      string // "cover" | "screenshot" | "demo"
-	Position  *int
-	CreatedAt string
-	UpdatedAt string
+	ID        int    `json:"id"`
+	ProjectID int    `json:"projectId"`
+	URL       string `json:"url"`
+	Type      string `json:"type"`
+	Position  *int   `json:"position"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
 type ProjectTechStore interface {

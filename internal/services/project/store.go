@@ -14,7 +14,7 @@ func NewStore(db *sql.DB) *Store {
 }
 
 func (s *Store) GetProjectById(id int) (types.Project, error) {
-	row := s.db.QueryRow("SELECT id, title, description, link, githubLink, createdAt, updatedAt FROM projects WHERE id = ?", id)
+	row := s.db.QueryRow("SELECT id, title, description, link, githubLink, status, createdAt, updatedAt FROM projects WHERE id = ?", id)
 
 	var project types.Project
 	err := row.Scan(
@@ -23,6 +23,7 @@ func (s *Store) GetProjectById(id int) (types.Project, error) {
 		&project.Description,
 		&project.Link,
 		&project.GithubLink,
+		&project.Status,
 		&project.CreatedAt,
 		&project.UpdatedAt,
 	)
@@ -35,7 +36,7 @@ func (s *Store) GetProjectById(id int) (types.Project, error) {
 
 func (s *Store) GetProjects(userId int) ([]types.Project, error) {
 	rows, err := s.db.Query(
-		"SELECT id, title, description, link, githubLink FROM projects WHERE userId = ?",
+		"SELECT id, title, description, link, githubLink, status FROM projects WHERE userId = ?",
 		userId,
 	)
 	if err != nil {
@@ -114,6 +115,7 @@ func scanRowIntoProject(rows *sql.Rows) (types.Project, error) {
 		&project.Description,
 		&project.Link,
 		&project.GithubLink,
+		&project.Status,
 	)
 	if err != nil {
 		return types.Project{}, err

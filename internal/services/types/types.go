@@ -220,6 +220,7 @@ type Project struct {
 	Description string  `json:"description"`
 	Link        string  `json:"link"`
 	GithubLink  string  `json:"githubLink"`
+	Status      string  `json:"status"`
 	CreatedAt   string  `json:"createdAt"`
 	UpdatedAt   *string `json:"updatedAt"`
 }
@@ -229,6 +230,7 @@ type ProjectPayload struct {
 	Description string `json:"description"`
 	Link        string `json:"link"`
 	GithubLink  string `json:"githubLink"`
+	Status      string `json:"status"`
 }
 
 type ProjectImageStore interface {

@@ -188,7 +188,7 @@ func (h *Handler) handleSetCover(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 🔥 delete old cover first
+	// delete old cover first
 	existingImages, err := h.imageStore.GetProjectImages(projectId)
 	if err == nil {
 		for _, img := range existingImages {

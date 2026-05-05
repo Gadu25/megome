@@ -33,8 +33,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 }
 
 func (h *Handler) handleViewTechnology(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserIDFromContext(r.Context())
-	technology, err := h.technologyStore.GetTechnologies(userID)
+	technology, err := h.technologyStore.GetTechnologies()
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
@@ -64,9 +63,9 @@ func (h *Handler) handleCreateTechnology(w http.ResponseWriter, r *http.Request)
 	// create technology
 	userID := auth.GetUserIDFromContext(r.Context())
 	err := h.technologyStore.CreateTechnology(types.Technology{
-		UserID: userID,
-		Name:   payload.Name,
-		Slug:   payload.Slug,
+		CreatedByUserId: &userID,
+		Name:            payload.Name,
+		Category:        payload.Category,
 	})
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
@@ -99,8 +98,8 @@ func (h *Handler) handleUpdateTechnology(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	err = h.technologyStore.UpdateTechnology(id, types.Technology{
-		Name: payload.Name,
-		Slug: payload.Slug,
+		Name:     payload.Name,
+		Category: payload.Category,
 	})
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)

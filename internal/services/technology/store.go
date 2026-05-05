@@ -29,9 +29,9 @@ func (s *Store) GetTechnologyById(id int) (*types.Technology, error) {
 	return technology, nil
 }
 
-func (s *Store) GetTechnologies(userID int) ([]types.Technology, error) {
+func (s *Store) GetTechnologies() ([]types.Technology, error) {
 	rows, err := s.db.Query(
-		"SELECT id, userId, name, slug, createdAt, updatedAt FROM technologies WHERE userId = ?", userID,
+		"SELECT id, createdByUserId, name, slug, category, isVerified, createdAt, updatedAt FROM technologies",
 	)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (s *Store) GetTechnologies(userID int) ([]types.Technology, error) {
 func (s *Store) CreateTechnology(technology types.Technology) error {
 	_, err := s.db.Exec(
 		"INSERT INTO technologies (userId, name, slug) VALUES(?, ?, ?)",
-		technology.UserID,
+		technology.CreatedByUserId,
 		technology.Name,
 		technology.Slug,
 	)
@@ -90,9 +90,11 @@ func scanRowIntoTechnology(rows *sql.Rows) (types.Technology, error) {
 
 	err := rows.Scan(
 		&technology.ID,
-		&technology.UserID,
+		&technology.CreatedByUserId,
 		&technology.Name,
 		&technology.Slug,
+		&technology.Category,
+		&technology.IsVerified,
 		&technology.CreatedAt,
 		&technology.UpdatedAt,
 	)

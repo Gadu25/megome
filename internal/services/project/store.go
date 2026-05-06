@@ -3,6 +3,7 @@ package project
 import (
 	"database/sql"
 	"megome/internal/services/types"
+	"megome/internal/services/utils"
 )
 
 type Store struct {
@@ -268,21 +269,41 @@ func (s *Store) GetProjectsFull(userId int) ([]types.ProjectFull, error) {
 		return nil, err
 	}
 
-	// same for techs (not shown fully)
+	techsMap, err := s.GetProjectTechs(projectIds) // <-- YOU FORGOT THIS
+	if err != nil {
+		return nil, err
+	}
 
 	result := make([]types.ProjectFull, 0, len(projects))
 
 	for _, p := range projects {
 		result = append(result, types.ProjectFull{
 			Project:      p,
-			Images:       imagesMap[p.ID],
-			Technologies: []types.Technology{}, // fill from tech map
+			Images:       mapImages(imagesMap[p.ID]),
+			Technologies: techsMap[p.ID],
 		})
 	}
 
 	return result, nil
 }
 
+func mapImages(images []types.ProjectImage) types.ProjectImages {
+	var result types.ProjectImages
+
+	for _, img := range images {
+		publicURL := utils.GetPublicFile(img.URL)
+
+		switch img.Type {
+		case "cover":
+			result.Cover = &publicURL
+
+		case "screenshot":
+			result.Screenshots = append(result.Screenshots, publicURL)
+		}
+	}
+
+	return result
+}
 func scanRowIntoProject(rows *sql.Rows) (types.Project, error) {
 	var project types.Project
 	err := rows.Scan(

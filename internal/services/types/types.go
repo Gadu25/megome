@@ -229,11 +229,16 @@ type Project struct {
 	UpdatedAt   *string `json:"updatedAt"`
 }
 
+type ProjectImages struct {
+	Cover       *string  `json:"cover"`
+	Screenshots []string `json:"screenshots"`
+}
+
 type ProjectFull struct {
 	Project
 
-	Images       []ProjectImage `json:"images"`
-	Technologies []Technology   `json:"technologies"`
+	Images       ProjectImages `json:"images"`
+	Technologies []Technology  `json:"technologies"`
 }
 
 type ProjectPayload struct {

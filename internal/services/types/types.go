@@ -210,6 +210,7 @@ type TechnologyPayload struct {
 
 type ProjectStore interface {
 	GetProjects(int) ([]Project, error)
+	GetProjectsFull(int) ([]ProjectFull, error)
 	CreateProject(Project) (Project, error)
 	UpdateProject(int, Project) (Project, error)
 	DeleteProject(int) (Project, error)
@@ -226,6 +227,13 @@ type Project struct {
 	IsDraft     bool    `json:"isDraft"`
 	CreatedAt   string  `json:"createdAt"`
 	UpdatedAt   *string `json:"updatedAt"`
+}
+
+type ProjectFull struct {
+	Project
+
+	Images       []ProjectImage `json:"images"`
+	Technologies []Technology   `json:"technologies"`
 }
 
 type ProjectPayload struct {

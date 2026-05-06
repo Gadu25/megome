@@ -36,7 +36,9 @@ func (s *Store) GetProjectById(id int) (types.Project, error) {
 
 func (s *Store) GetProjects(userId int) ([]types.Project, error) {
 	rows, err := s.db.Query(
-		"SELECT id, title, description, link, githubLink, status FROM projects WHERE userId = ?",
+		`SELECT id, title, description, link, githubLink, status, createdAt, updatedAt
+		 FROM projects
+		 WHERE userId = ?`,
 		userId,
 	)
 	if err != nil {
@@ -44,15 +46,32 @@ func (s *Store) GetProjects(userId int) ([]types.Project, error) {
 	}
 	defer rows.Close()
 
-	projects := make([]types.Project, 0)
+	projects := []types.Project{}
 
 	for rows.Next() {
-		project, err := scanRowIntoProject(rows)
+		var p types.Project
+
+		err := rows.Scan(
+			&p.ID,
+			&p.Title,
+			&p.Description,
+			&p.Link,
+			&p.GithubLink,
+			&p.Status,
+			&p.CreatedAt,
+			&p.UpdatedAt,
+		)
 		if err != nil {
 			return nil, err
 		}
-		projects = append(projects, project)
+
+		projects = append(projects, p)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return projects, nil
 }
 
@@ -106,6 +125,162 @@ func (s *Store) DeleteProject(id int) (types.Project, error) {
 	}
 
 	return project, nil
+}
+
+func (s *Store) GetProjectImages(projectIds []int) (map[int][]types.ProjectImage, error) {
+	if len(projectIds) == 0 {
+		return nil, nil
+	}
+
+	// build placeholders (?, ?, ?)
+	placeholders := ""
+	args := make([]interface{}, len(projectIds))
+
+	for i, id := range projectIds {
+		if i > 0 {
+			placeholders += ","
+		}
+		placeholders += "?"
+		args[i] = id
+	}
+
+	query := `
+		SELECT id, projectId, url, type, position, createdAt, updatedAt
+		FROM project_images
+		WHERE projectId IN (` + placeholders + `)
+	`
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[int][]types.ProjectImage)
+
+	for rows.Next() {
+		var img types.ProjectImage
+
+		err := rows.Scan(
+			&img.ID,
+			&img.ProjectID,
+			&img.URL,
+			&img.Type,
+			&img.Position,
+			&img.CreatedAt,
+			&img.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		result[img.ProjectID] = append(result[img.ProjectID], img)
+	}
+
+	return result, rows.Err()
+}
+
+func (s *Store) GetProjectTechs(projectIds []int) (map[int][]types.Technology, error) {
+	if len(projectIds) == 0 {
+		return nil, nil
+	}
+
+	// build IN (?, ?, ?)
+	placeholders := ""
+	args := make([]interface{}, len(projectIds))
+
+	for i, id := range projectIds {
+		if i > 0 {
+			placeholders += ","
+		}
+		placeholders += "?"
+		args[i] = id
+	}
+
+	query := `
+		SELECT 
+			pt.projectId,
+			t.id,
+			t.createdByUserId,
+			t.name,
+			t.slug,
+			t.category,
+			t.isVerified,
+			t.createdAt,
+			t.updatedAt
+		FROM project_techs pt
+		INNER JOIN technologies t ON pt.techId = t.id
+		WHERE pt.projectId IN (` + placeholders + `)
+	`
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[int][]types.Technology)
+
+	for rows.Next() {
+		var (
+			projectID int
+			tech      types.Technology
+		)
+
+		err := rows.Scan(
+			&projectID,
+			&tech.ID,
+			&tech.CreatedByUserId,
+			&tech.Name,
+			&tech.Slug,
+			&tech.Category,
+			&tech.IsVerified,
+			&tech.CreatedAt,
+			&tech.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		result[projectID] = append(result[projectID], tech)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *Store) GetProjectsFull(userId int) ([]types.ProjectFull, error) {
+	projects, err := s.GetProjects(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	projectIds := make([]int, 0, len(projects))
+	for _, p := range projects {
+		projectIds = append(projectIds, p.ID)
+	}
+
+	imagesMap, err := s.GetProjectImages(projectIds)
+	if err != nil {
+		return nil, err
+	}
+
+	// same for techs (not shown fully)
+
+	result := make([]types.ProjectFull, 0, len(projects))
+
+	for _, p := range projects {
+		result = append(result, types.ProjectFull{
+			Project:      p,
+			Images:       imagesMap[p.ID],
+			Technologies: []types.Technology{}, // fill from tech map
+		})
+	}
+
+	return result, nil
 }
 
 func scanRowIntoProject(rows *sql.Rows) (types.Project, error) {

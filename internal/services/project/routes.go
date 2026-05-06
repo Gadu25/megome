@@ -21,6 +21,11 @@ type ProjectResponse struct {
 	Projects []types.Project `json:"projects"`
 }
 
+type FullProjectResponse struct {
+	Message  string              `json:"message"`
+	Projects []types.ProjectFull `json:"projects"`
+}
+
 type SingleProjResponse struct {
 	Message string        `json:"message"`
 	Project types.Project `json:"project"`
@@ -39,12 +44,12 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 
 func (h *Handler) handleViewProject(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserIDFromContext(r.Context())
-	projects, err := h.projectStore.GetProjects(userID)
+	projects, err := h.projectStore.GetProjectsFull(userID)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	resp := ProjectResponse{
+	resp := FullProjectResponse{
 		Message:  "Project fetched successfully",
 		Projects: projects,
 	}

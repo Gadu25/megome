@@ -223,6 +223,7 @@ type Project struct {
 	Link        string  `json:"link"`
 	GithubLink  string  `json:"githubLink"`
 	Status      string  `json:"status"`
+	IsDraft     bool    `json:"isDraft"`
 	CreatedAt   string  `json:"createdAt"`
 	UpdatedAt   *string `json:"updatedAt"`
 }
@@ -233,6 +234,7 @@ type ProjectPayload struct {
 	Link        string `json:"link"`
 	GithubLink  string `json:"githubLink"`
 	Status      string `json:"status"`
+	IsDraft     bool   `json:"isDraft"`
 }
 
 type ProjectImageStore interface {

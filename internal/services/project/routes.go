@@ -116,6 +116,7 @@ func (h *Handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 		Description: payload.Description,
 		Link:        payload.Link,
 		GithubLink:  payload.GithubLink,
+		IsDraft:     payload.IsDraft,
 	})
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)

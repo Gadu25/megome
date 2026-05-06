@@ -79,11 +79,12 @@ func (s *Store) CreateProject(project types.Project) (types.Project, error) {
 
 func (s *Store) UpdateProject(id int, project types.Project) (types.Project, error) {
 	_, err := s.db.Exec(
-		"UPDATE projects SET title = ?, description = ?, link = ?, githubLink = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
+		"UPDATE projects SET title = ?, description = ?, link = ?, githubLink = ?, isDraft = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
 		project.Title,
 		project.Description,
 		project.Link,
 		project.GithubLink,
+		project.IsDraft,
 		id,
 	)
 	if err != nil {

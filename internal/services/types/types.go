@@ -257,6 +257,7 @@ type ProjectImage struct {
 
 type ProjectTechStore interface {
 	CreateProjectTech(ProjectTech) error
+	CreateProjectTechBatch(int, []int) error
 	DelteProjectTech(int) error
 }
 
@@ -270,4 +271,8 @@ type ProjectTech struct {
 type ProjectTechPayload struct {
 	ProjectID int `json:"projectId"`
 	TechID    int `json:"techId"`
+}
+
+type BatchProjectTechPayload struct {
+	TechIDs []int `json:"techIds" validate:"required,min=1"`
 }

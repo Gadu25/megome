@@ -17,8 +17,8 @@ type Handler struct {
 }
 
 type TechnologyResponses struct {
-	Message string             `json:"message"`
-	Data    []types.Technology `json:"data"`
+	Message      string             `json:"message"`
+	Technologies []types.Technology `json:"technologies"`
 }
 
 func NewHandler(technologyStore types.TechnologyStore, userStore types.UserStore) *Handler {
@@ -39,8 +39,8 @@ func (h *Handler) handleViewTechnology(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	resp := TechnologyResponses{
-		Message: "Technology fetched successfully",
-		Data:    technology,
+		Message:      "Technology fetched successfully",
+		Technologies: technology,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }

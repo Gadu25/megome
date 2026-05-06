@@ -6,6 +6,7 @@ import (
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 	"net/http"
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -29,12 +30,29 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/projectTech", auth.WithJWTAuth(h.handleCreateProjectTech, h.userStore)).Methods("POST")
 	// in the future that we need updating
 	// router.HandleFunc("/projectTech/{id}", auth.WithJWTAuth(h.handleUpdateProjectTech, h.userStore)).Methods("PUT")
+	router.HandleFunc("/projectTech/{id}/batch", auth.WithJWTAuth(h.handleBatchCreateProjectTech, h.userStore)).Methods("POST")
 	router.HandleFunc("/projectTech/{id}", auth.WithJWTAuth(h.handleDeleteProjectTech, h.userStore)).Methods("DELETE")
 }
 
 func (h *Handler) handleCreateProjectTech(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	var payload types.ProjectTechPayload
+	projectID, err := strconv.Atoi(r.FormValue("projectId"))
+	if err != nil {
+		http.Error(w, "invalid projectId", http.StatusBadRequest)
+		return
+	}
+
+	techID, err := strconv.Atoi(r.FormValue("techId"))
+	if err != nil {
+		http.Error(w, "invalid techId", http.StatusBadRequest)
+		return
+	}
+
+	payload := types.ProjectTechPayload{
+		ProjectID: projectID,
+		TechID:    techID,
+	}
+
 	if err := utils.ParseJSON(r, &payload); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
@@ -48,7 +66,7 @@ func (h *Handler) handleCreateProjectTech(w http.ResponseWriter, r *http.Request
 	}
 
 	// create certification
-	err := h.projectTechStore.CreateProjectTech(types.ProjectTech{
+	err = h.projectTechStore.CreateProjectTech(types.ProjectTech{
 		ProjectID: payload.ProjectID,
 		TechID:    payload.TechID,
 	})
@@ -58,6 +76,37 @@ func (h *Handler) handleCreateProjectTech(w http.ResponseWriter, r *http.Request
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]string{
 		"message": "Certification is successfully created",
+	})
+}
+
+func (h *Handler) handleBatchCreateProjectTech(w http.ResponseWriter, r *http.Request) {
+	id, err := utils.GetRequestId(r)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	var payload types.BatchProjectTechPayload
+
+	// decode JSON
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	// validate payload
+	if err := utils.Validate.Struct(payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := h.projectTechStore.CreateProjectTechBatch(id, payload.TechIDs); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{
+		"message": "Technologies successfully linked to project",
 	})
 }
 

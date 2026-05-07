@@ -209,11 +209,12 @@ type TechnologyPayload struct {
 }
 
 type ProjectStore interface {
+	GetProjectById(int) (ProjectFull, error)
 	GetProjects(int) ([]Project, error)
 	GetProjectsFull(int) ([]ProjectFull, error)
-	CreateProject(Project) (Project, error)
-	UpdateProject(int, Project) (Project, error)
-	DeleteProject(int) (Project, error)
+	CreateProject(Project) (ProjectFull, error)
+	UpdateProject(int, Project) (ProjectFull, error)
+	DeleteProject(int) (ProjectFull, error)
 }
 
 type Project struct {

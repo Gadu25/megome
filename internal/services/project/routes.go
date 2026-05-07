@@ -27,8 +27,8 @@ type FullProjectResponse struct {
 }
 
 type SingleProjResponse struct {
-	Message string        `json:"message"`
-	Project types.Project `json:"project"`
+	Message string            `json:"message"`
+	Project types.ProjectFull `json:"project"`
 }
 
 func NewHandler(projectStore types.ProjectStore, userStore types.UserStore) *Handler {
@@ -36,13 +36,33 @@ func NewHandler(projectStore types.ProjectStore, userStore types.UserStore) *Han
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/project", auth.WithJWTAuth(h.handleViewProject, h.userStore)).Methods("GET")
+	router.HandleFunc("/project", auth.WithJWTAuth(h.handleViewProjects, h.userStore)).Methods("GET")
+	router.HandleFunc("/project/{id}", auth.WithJWTAuth(h.handleViewProject, h.userStore)).Methods("GET")
 	router.HandleFunc("/project", auth.WithJWTAuth(h.handleCreateProject, h.userStore)).Methods("POST")
 	router.HandleFunc("/project/{id}", auth.WithJWTAuth(h.handleUpdateProject, h.userStore)).Methods("PUT")
 	router.HandleFunc("/project/{id}", auth.WithJWTAuth(h.handleDeleteProject, h.userStore)).Methods("DELETE")
 }
 
 func (h *Handler) handleViewProject(w http.ResponseWriter, r *http.Request) {
+	id, err := utils.GetRequestId(r)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	project, err := h.projectStore.GetProjectById(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := SingleProjResponse{
+		Message: "Project fetched successfully",
+		Project: project,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) handleViewProjects(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetUserIDFromContext(r.Context())
 	projects, err := h.projectStore.GetProjectsFull(userID)
 	if err != nil {

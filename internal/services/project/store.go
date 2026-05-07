@@ -14,8 +14,12 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) GetProjectById(id int) (types.Project, error) {
-	row := s.db.QueryRow("SELECT id, title, description, link, githubLink, status, createdAt, updatedAt FROM projects WHERE id = ?", id)
+func (s *Store) GetProjectById(id int) (types.ProjectFull, error) {
+	row := s.db.QueryRow(`
+		SELECT id, title, description, link, githubLink, status, createdAt, updatedAt
+		FROM projects
+		WHERE id = ?
+	`, id)
 
 	var project types.Project
 	err := row.Scan(
@@ -29,10 +33,24 @@ func (s *Store) GetProjectById(id int) (types.Project, error) {
 		&project.UpdatedAt,
 	)
 	if err != nil {
-		return types.Project{}, err
+		return types.ProjectFull{}, err
 	}
 
-	return project, nil
+	imagesMap, err := s.GetProjectImages([]int{id})
+	if err != nil {
+		return types.ProjectFull{}, err
+	}
+
+	techsMap, err := s.GetProjectTechs([]int{id})
+	if err != nil {
+		return types.ProjectFull{}, err
+	}
+
+	return types.ProjectFull{
+		Project:      project,
+		Images:       mapImages(imagesMap[id]),
+		Technologies: techsMap[id],
+	}, nil
 }
 
 func (s *Store) GetProjects(userId int) ([]types.Project, error) {
@@ -76,7 +94,7 @@ func (s *Store) GetProjects(userId int) ([]types.Project, error) {
 	return projects, nil
 }
 
-func (s *Store) CreateProject(project types.Project) (types.Project, error) {
+func (s *Store) CreateProject(project types.Project) (types.ProjectFull, error) {
 	result, err := s.db.Exec(
 		"INSERT into projects (title, description, link, githubLink, userId) VALUES(?, ?, ?, ?, ?)",
 		project.Title,
@@ -86,18 +104,18 @@ func (s *Store) CreateProject(project types.Project) (types.Project, error) {
 		project.UserID,
 	)
 	if err != nil {
-		return types.Project{}, err
+		return types.ProjectFull{}, err
 	}
 
 	id, err := result.LastInsertId()
 	if err != nil {
-		return types.Project{}, err
+		return types.ProjectFull{}, err
 	}
 
 	return s.GetProjectById(int(id))
 }
 
-func (s *Store) UpdateProject(id int, project types.Project) (types.Project, error) {
+func (s *Store) UpdateProject(id int, project types.Project) (types.ProjectFull, error) {
 	_, err := s.db.Exec(
 		"UPDATE projects SET title = ?, description = ?, link = ?, githubLink = ?, isDraft = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
 		project.Title,
@@ -108,21 +126,21 @@ func (s *Store) UpdateProject(id int, project types.Project) (types.Project, err
 		id,
 	)
 	if err != nil {
-		return types.Project{}, err
+		return types.ProjectFull{}, err
 	}
 	return s.GetProjectById(id)
 }
 
-func (s *Store) DeleteProject(id int) (types.Project, error) {
+func (s *Store) DeleteProject(id int) (types.ProjectFull, error) {
 	project, err := s.GetProjectById(id)
 
 	if err != nil {
-		return types.Project{}, err
+		return types.ProjectFull{}, err
 	}
 
 	_, err = s.db.Exec("DELETE FROM projects WHERE id = ?", id)
 	if err != nil {
-		return types.Project{}, err
+		return types.ProjectFull{}, err
 	}
 
 	return project, nil

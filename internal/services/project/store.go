@@ -55,7 +55,7 @@ func (s *Store) GetProjectById(id int) (types.ProjectFull, error) {
 
 func (s *Store) GetProjects(userId int) ([]types.Project, error) {
 	rows, err := s.db.Query(
-		`SELECT id, title, description, link, githubLink, status, createdAt, updatedAt
+		`SELECT id, title, description, link, githubLink, status, isDraft, createdAt, updatedAt
 		 FROM projects
 		 WHERE userId = ?`,
 		userId,
@@ -77,6 +77,7 @@ func (s *Store) GetProjects(userId int) ([]types.Project, error) {
 			&p.Link,
 			&p.GithubLink,
 			&p.Status,
+			&p.IsDraft,
 			&p.CreatedAt,
 			&p.UpdatedAt,
 		)

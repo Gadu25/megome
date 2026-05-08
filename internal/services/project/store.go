@@ -1,17 +1,23 @@
 package project
 
 import (
+	"context"
 	"database/sql"
+	"fmt"
+	"strings"
+
+	"megome/internal/services/storage"
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 )
 
 type Store struct {
-	db *sql.DB
+	db      *sql.DB
+	storage *storage.R2Client
 }
 
-func NewStore(db *sql.DB) *Store {
-	return &Store{db: db}
+func NewStore(db *sql.DB, storage *storage.R2Client) *Store {
+	return &Store{db: db, storage: storage}
 }
 
 func (s *Store) GetProjectById(id int) (types.ProjectFull, error) {
@@ -21,17 +27,7 @@ func (s *Store) GetProjectById(id int) (types.ProjectFull, error) {
 		WHERE id = ?
 	`, id)
 
-	var project types.Project
-	err := row.Scan(
-		&project.ID,
-		&project.Title,
-		&project.Description,
-		&project.Link,
-		&project.GithubLink,
-		&project.Status,
-		&project.CreatedAt,
-		&project.UpdatedAt,
-	)
+	project, err := scanProject(row)
 	if err != nil {
 		return types.ProjectFull{}, err
 	}
@@ -54,50 +50,35 @@ func (s *Store) GetProjectById(id int) (types.ProjectFull, error) {
 }
 
 func (s *Store) GetProjects(userId int) ([]types.Project, error) {
-	rows, err := s.db.Query(
-		`SELECT id, title, description, link, githubLink, status, isDraft, createdAt, updatedAt
-		 FROM projects
-		 WHERE userId = ?`,
-		userId,
-	)
+	rows, err := s.db.Query(`
+		SELECT id, title, description, link, githubLink, status, isDraft, createdAt, updatedAt
+		FROM projects
+		WHERE userId = ?
+	`, userId)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	projects := []types.Project{}
+	var projects []types.Project
 
 	for rows.Next() {
-		var p types.Project
-
-		err := rows.Scan(
-			&p.ID,
-			&p.Title,
-			&p.Description,
-			&p.Link,
-			&p.GithubLink,
-			&p.Status,
-			&p.IsDraft,
-			&p.CreatedAt,
-			&p.UpdatedAt,
-		)
+		project, err := scanProjectRows(rows)
 		if err != nil {
 			return nil, err
 		}
 
-		projects = append(projects, p)
+		projects = append(projects, project)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return projects, nil
+	return projects, rows.Err()
 }
 
 func (s *Store) CreateProject(project types.Project) (types.ProjectFull, error) {
-	result, err := s.db.Exec(
-		"INSERT into projects (title, description, link, githubLink, userId) VALUES(?, ?, ?, ?, ?)",
+	result, err := s.db.Exec(`
+		INSERT INTO projects (title, description, link, githubLink, userId)
+		VALUES (?, ?, ?, ?, ?)
+	`,
 		project.Title,
 		project.Description,
 		project.Link,
@@ -117,8 +98,17 @@ func (s *Store) CreateProject(project types.Project) (types.ProjectFull, error) 
 }
 
 func (s *Store) UpdateProject(id int, project types.Project) (types.ProjectFull, error) {
-	_, err := s.db.Exec(
-		"UPDATE projects SET title = ?, description = ?, link = ?, githubLink = ?, isDraft = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
+	_, err := s.db.Exec(`
+		UPDATE projects
+		SET
+			title = ?,
+			description = ?,
+			link = ?,
+			githubLink = ?,
+			isDraft = ?,
+			updatedAt = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`,
 		project.Title,
 		project.Description,
 		project.Link,
@@ -129,48 +119,85 @@ func (s *Store) UpdateProject(id int, project types.Project) (types.ProjectFull,
 	if err != nil {
 		return types.ProjectFull{}, err
 	}
+
 	return s.GetProjectById(id)
 }
 
 func (s *Store) DeleteProject(id int) (types.ProjectFull, error) {
 	project, err := s.GetProjectById(id)
-
 	if err != nil {
 		return types.ProjectFull{}, err
 	}
 
-	_, err = s.db.Exec("DELETE FROM projects WHERE id = ?", id)
+	tx, err := s.db.Begin()
 	if err != nil {
 		return types.ProjectFull{}, err
+	}
+
+	// rollback safety
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	// 1. delete DB first (source of truth)
+	if _, err = tx.Exec(`
+		DELETE FROM project_images
+		WHERE projectId = ?
+	`, id); err != nil {
+		return types.ProjectFull{}, err
+	}
+
+	if _, err = tx.Exec(`
+		DELETE FROM project_techs
+		WHERE projectId = ?
+	`, id); err != nil {
+		return types.ProjectFull{}, err
+	}
+
+	if _, err = tx.Exec(`
+		DELETE FROM projects
+		WHERE id = ?
+	`, id); err != nil {
+		return types.ProjectFull{}, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return types.ProjectFull{}, err
+	}
+
+	// 2. delete storage AFTER commit (eventual consistency model)
+	ctx := context.Background()
+
+	for _, url := range project.Images.Screenshots {
+		key := utils.ExtractR2Key(url)
+		err = s.storage.DeleteObject(ctx, key)
+		if err != nil {
+			return types.ProjectFull{}, err
+		}
+	}
+
+	if project.Images.Cover != nil && *project.Images.Cover != "" {
+		key := utils.ExtractR2Key(*project.Images.Cover)
+		err = s.storage.DeleteObject(ctx, key)
+		if err != nil {
+			return types.ProjectFull{}, err
+		}
 	}
 
 	return project, nil
 }
 
 func (s *Store) GetProjectImages(projectIds []int) (map[int][]types.ProjectImage, error) {
-	if len(projectIds) == 0 {
+	query, args := buildInQuery(projectIds)
+	if query == "" {
 		return nil, nil
 	}
 
-	// build placeholders (?, ?, ?)
-	placeholders := ""
-	args := make([]interface{}, len(projectIds))
-
-	for i, id := range projectIds {
-		if i > 0 {
-			placeholders += ","
-		}
-		placeholders += "?"
-		args[i] = id
-	}
-
-	query := `
+	rows, err := s.db.Query(fmt.Sprintf(`
 		SELECT id, projectId, url, type, position, createdAt, updatedAt
 		FROM project_images
-		WHERE projectId IN (` + placeholders + `)
-	`
-
-	rows, err := s.db.Query(query, args...)
+		WHERE projectId IN (%s)
+	`, query), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -179,46 +206,25 @@ func (s *Store) GetProjectImages(projectIds []int) (map[int][]types.ProjectImage
 	result := make(map[int][]types.ProjectImage)
 
 	for rows.Next() {
-		var img types.ProjectImage
-
-		err := rows.Scan(
-			&img.ID,
-			&img.ProjectID,
-			&img.URL,
-			&img.Type,
-			&img.Position,
-			&img.CreatedAt,
-			&img.UpdatedAt,
-		)
+		image, err := scanProjectImage(rows)
 		if err != nil {
 			return nil, err
 		}
 
-		result[img.ProjectID] = append(result[img.ProjectID], img)
+		result[image.ProjectID] = append(result[image.ProjectID], image)
 	}
 
 	return result, rows.Err()
 }
 
 func (s *Store) GetProjectTechs(projectIds []int) (map[int][]types.Technology, error) {
-	if len(projectIds) == 0 {
+	query, args := buildInQuery(projectIds)
+	if query == "" {
 		return nil, nil
 	}
 
-	// build IN (?, ?, ?)
-	placeholders := ""
-	args := make([]interface{}, len(projectIds))
-
-	for i, id := range projectIds {
-		if i > 0 {
-			placeholders += ","
-		}
-		placeholders += "?"
-		args[i] = id
-	}
-
-	query := `
-		SELECT 
+	rows, err := s.db.Query(fmt.Sprintf(`
+		SELECT
 			pt.projectId,
 			t.id,
 			t.createdByUserId,
@@ -230,10 +236,8 @@ func (s *Store) GetProjectTechs(projectIds []int) (map[int][]types.Technology, e
 			t.updatedAt
 		FROM project_techs pt
 		INNER JOIN technologies t ON pt.techId = t.id
-		WHERE pt.projectId IN (` + placeholders + `)
-	`
-
-	rows, err := s.db.Query(query, args...)
+		WHERE pt.projectId IN (%s)
+	`, query), args...)
 	if err != nil {
 		return nil, err
 	}
@@ -242,22 +246,7 @@ func (s *Store) GetProjectTechs(projectIds []int) (map[int][]types.Technology, e
 	result := make(map[int][]types.Technology)
 
 	for rows.Next() {
-		var (
-			projectID int
-			tech      types.Technology
-		)
-
-		err := rows.Scan(
-			&projectID,
-			&tech.ID,
-			&tech.CreatedByUserId,
-			&tech.Name,
-			&tech.Slug,
-			&tech.Category,
-			&tech.IsVerified,
-			&tech.CreatedAt,
-			&tech.UpdatedAt,
-		)
+		projectID, tech, err := scanTechnology(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -265,11 +254,7 @@ func (s *Store) GetProjectTechs(projectIds []int) (map[int][]types.Technology, e
 		result[projectID] = append(result[projectID], tech)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return result, rows.Err()
 }
 
 func (s *Store) GetProjectsFull(userId int) ([]types.ProjectFull, error) {
@@ -278,32 +263,123 @@ func (s *Store) GetProjectsFull(userId int) ([]types.ProjectFull, error) {
 		return nil, err
 	}
 
-	projectIds := make([]int, 0, len(projects))
-	for _, p := range projects {
-		projectIds = append(projectIds, p.ID)
+	projectIDs := make([]int, 0, len(projects))
+
+	for _, project := range projects {
+		projectIDs = append(projectIDs, project.ID)
 	}
 
-	imagesMap, err := s.GetProjectImages(projectIds)
+	imagesMap, err := s.GetProjectImages(projectIDs)
 	if err != nil {
 		return nil, err
 	}
 
-	techsMap, err := s.GetProjectTechs(projectIds) // <-- YOU FORGOT THIS
+	techsMap, err := s.GetProjectTechs(projectIDs)
 	if err != nil {
 		return nil, err
 	}
 
 	result := make([]types.ProjectFull, 0, len(projects))
 
-	for _, p := range projects {
+	for _, project := range projects {
 		result = append(result, types.ProjectFull{
-			Project:      p,
-			Images:       mapImages(imagesMap[p.ID]),
-			Technologies: techsMap[p.ID],
+			Project:      project,
+			Images:       mapImages(imagesMap[project.ID]),
+			Technologies: techsMap[project.ID],
 		})
 	}
 
 	return result, nil
+}
+
+func buildInQuery(ids []int) (string, []interface{}) {
+	if len(ids) == 0 {
+		return "", nil
+	}
+
+	placeholders := make([]string, len(ids))
+	args := make([]interface{}, len(ids))
+
+	for i, id := range ids {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+
+	return strings.Join(placeholders, ","), args
+}
+
+func scanProject(scanner interface {
+	Scan(dest ...interface{}) error
+}) (types.Project, error) {
+	var project types.Project
+
+	err := scanner.Scan(
+		&project.ID,
+		&project.Title,
+		&project.Description,
+		&project.Link,
+		&project.GithubLink,
+		&project.Status,
+		&project.CreatedAt,
+		&project.UpdatedAt,
+	)
+
+	return project, err
+}
+
+func scanProjectRows(rows *sql.Rows) (types.Project, error) {
+	var project types.Project
+
+	err := rows.Scan(
+		&project.ID,
+		&project.Title,
+		&project.Description,
+		&project.Link,
+		&project.GithubLink,
+		&project.Status,
+		&project.IsDraft,
+		&project.CreatedAt,
+		&project.UpdatedAt,
+	)
+
+	return project, err
+}
+
+func scanProjectImage(rows *sql.Rows) (types.ProjectImage, error) {
+	var image types.ProjectImage
+
+	err := rows.Scan(
+		&image.ID,
+		&image.ProjectID,
+		&image.URL,
+		&image.Type,
+		&image.Position,
+		&image.CreatedAt,
+		&image.UpdatedAt,
+	)
+
+	return image, err
+}
+
+func scanTechnology(rows *sql.Rows) (int, types.Technology, error) {
+	var (
+		projectID int
+		tech      types.Technology
+	)
+
+	err := rows.Scan(
+		&projectID,
+		&tech.ID,
+		&tech.CreatedByUserId,
+		&tech.Name,
+		&tech.Slug,
+		&tech.Category,
+		&tech.IsVerified,
+		&tech.CreatedAt,
+		&tech.UpdatedAt,
+	)
+
+	return projectID, tech, err
 }
 
 func mapImages(images []types.ProjectImage) types.ProjectImages {
@@ -322,19 +398,4 @@ func mapImages(images []types.ProjectImage) types.ProjectImages {
 	}
 
 	return result
-}
-func scanRowIntoProject(rows *sql.Rows) (types.Project, error) {
-	var project types.Project
-	err := rows.Scan(
-		&project.ID,
-		&project.Title,
-		&project.Description,
-		&project.Link,
-		&project.GithubLink,
-		&project.Status,
-	)
-	if err != nil {
-		return types.Project{}, err
-	}
-	return project, nil
 }

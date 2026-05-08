@@ -103,7 +103,7 @@ func (s *APIServer) Run() error {
 	technologyHandler := technology.NewHandler(technologyStore, userStore)
 	technologyHandler.RegisterRoutes(subrouter)
 
-	projectStore := project.NewStore(s.db)
+	projectStore := project.NewStore(s.db, r2Client)
 	projectHandler := project.NewHandler(projectStore, userStore)
 	projectHandler.RegisterRoutes(subrouter)
 

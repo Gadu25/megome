@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"megome/config"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -108,6 +110,28 @@ func GetFiletypeExtension(fileType string) (string, error) {
 func GetPublicFile(path string) string {
 	baseUrl := config.Envs.R2PublicUrl
 	return fmt.Sprintf("%s/%s", baseUrl, path)
+}
+
+func ExtractR2Key(input string) string {
+	if input == "" {
+		return ""
+	}
+
+	// Case 1: already a raw key (no scheme, no host)
+	if !strings.Contains(input, "://") {
+		return strings.TrimPrefix(input, "/")
+	}
+
+	// Case 2: full URL
+	parsed, err := url.Parse(input)
+	if err != nil {
+		return ""
+	}
+
+	path := parsed.Path
+
+	// remove leading slash to match R2 key format
+	return strings.TrimPrefix(path, "/")
 }
 
 func GenerateUUID() string {

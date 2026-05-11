@@ -22,7 +22,7 @@ func NewStore(db *sql.DB, storage *storage.R2Client) *Store {
 
 func (s *Store) GetProjectById(id int) (types.ProjectFull, error) {
 	row := s.db.QueryRow(`
-		SELECT id, title, description, link, githubLink, status, createdAt, updatedAt
+		SELECT id, title, description, link, githubLink, status, isDraft, createdAt, updatedAt
 		FROM projects
 		WHERE id = ?
 	`, id)
@@ -76,10 +76,11 @@ func (s *Store) GetProjects(userId int) ([]types.Project, error) {
 
 func (s *Store) CreateProject(project types.Project) (types.ProjectFull, error) {
 	result, err := s.db.Exec(`
-		INSERT INTO projects (title, description, link, githubLink, userId)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO projects (title, status, description, link, githubLink, userId)
+		VALUES (?, ?, ?, ?, ?, ?)
 	`,
 		project.Title,
+		project.Status,
 		project.Description,
 		project.Link,
 		project.GithubLink,
@@ -103,6 +104,7 @@ func (s *Store) UpdateProject(id int, project types.Project) (types.ProjectFull,
 		SET
 			title = ?,
 			description = ?,
+			status = ?,
 			link = ?,
 			githubLink = ?,
 			isDraft = ?,
@@ -111,6 +113,7 @@ func (s *Store) UpdateProject(id int, project types.Project) (types.ProjectFull,
 	`,
 		project.Title,
 		project.Description,
+		project.Status,
 		project.Link,
 		project.GithubLink,
 		project.IsDraft,
@@ -320,6 +323,7 @@ func scanProject(scanner interface {
 		&project.Link,
 		&project.GithubLink,
 		&project.Status,
+		&project.IsDraft,
 		&project.CreatedAt,
 		&project.UpdatedAt,
 	)

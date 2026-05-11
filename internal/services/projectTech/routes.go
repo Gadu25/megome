@@ -22,6 +22,11 @@ type ProjectResponses struct {
 	Data    []types.ProjectTech `json:"data"`
 }
 
+type ValidationErrorResponse struct {
+	Field string `json:"field"`
+	Error string `json:"error"`
+}
+
 func NewHandler(projectTechStore types.ProjectTechStore, userStore types.UserStore) *Handler {
 	return &Handler{projectTechStore: projectTechStore, userStore: userStore}
 }
@@ -124,4 +129,49 @@ func (h *Handler) handleDeleteProjectTech(w http.ResponseWriter, r *http.Request
 	utils.WriteJSON(w, http.StatusOK, map[string]string{
 		"message": "Project tech is successfully deleted",
 	})
+}
+
+func FormatValidationErrors(err error) []ValidationErrorResponse {
+	var errors []ValidationErrorResponse
+
+	validationErrors, ok := err.(validator.ValidationErrors)
+	if !ok {
+		return []ValidationErrorResponse{
+			{
+				Error: "Invalid request payload",
+			},
+		}
+	}
+
+	for _, fieldErr := range validationErrors {
+		switch fieldErr.Field() {
+
+		case "TechIDs":
+			switch fieldErr.Tag() {
+
+			case "min":
+				errors = append(errors, ValidationErrorResponse{
+					Field: "techIds",
+					Error: "At least one technology must be selected.",
+				})
+
+			default:
+				errors = append(errors, ValidationErrorResponse{
+					Field: "techIds",
+					Error: "Invalid technologies payload.",
+				})
+			}
+
+		default:
+			errors = append(errors, ValidationErrorResponse{
+				Field: fieldErr.Field(),
+				Error: fmt.Sprintf(
+					"Invalid value for %s.",
+					fieldErr.Field(),
+				),
+			})
+		}
+	}
+
+	return errors
 }

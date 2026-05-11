@@ -3,16 +3,13 @@ package refreshToken
 import (
 	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/rand"
 	"megome/config"
 	"megome/internal/services/auth"
 	"megome/internal/services/types"
+	"megome/internal/services/utils"
 	"time"
-
-	"github.com/go-sql-driver/mysql"
 )
 
 type Store struct {
@@ -23,18 +20,10 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func generateRandomToken() (string, error) {
-	b := make([]byte, 32) // 256-bit token
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(b), nil
-}
-
 func (s *Store) CreateRefreshToken(userId int) (string, error) {
 	// up to three tries if ever generated hash was not unique (very small chance to happen)
 	for i := 0; i < 2; i++ {
-		token, err := generateRandomToken()
+		token, err := utils.GenerateRandomToken("")
 		if err != nil {
 			return "", err
 		}
@@ -56,7 +45,7 @@ func (s *Store) CreateRefreshToken(userId int) (string, error) {
 			return token, nil
 		}
 
-		if isDuplicateKeyError(err) {
+		if utils.IsMysqlDuplicateKeyError(err) {
 			continue
 		}
 
@@ -148,13 +137,4 @@ func (s *Store) LogoutUser(token string) error {
 		return err
 	}
 	return nil
-}
-
-func isDuplicateKeyError(err error) bool {
-	var mysqlErr *mysql.MySQLError
-	if errors.As(err, &mysqlErr) {
-		// reserved error number for duplicate entry
-		return mysqlErr.Number == 1062
-	}
-	return false
 }

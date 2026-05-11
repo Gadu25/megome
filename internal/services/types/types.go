@@ -290,3 +290,38 @@ type ProjectTechPayload struct {
 type BatchProjectTechPayload struct {
 	TechIDs []int `json:"techIds" validate:"required,min=1"`
 }
+
+type PersonalAccessToken struct {
+	ID         int        `json:"id"`
+	UserID     int        `json:"userId"`
+	Name       string     `json:"name"`
+	TokenHash  string     `json:"tokenHash"`
+	LastUsedAt *time.Time `json:"lastUsedAt,omitempty"`
+	RevokedAt  *time.Time `json:"revokedAt,omitempty"`
+	CreatedAt  time.Time  `json:"createdAt"`
+	UpdatedAt  time.Time  `json:"updatedAt"`
+}
+
+type PersonalAccessTokenPayload struct {
+	Name string `json:"name" validate:"required"`
+}
+
+type APIUsageLog struct {
+	ID             int       `json:"id"`
+	UserID         int       `json:"userId"`
+	TokenID        int       `json:"tokenId"`
+	Endpoint       string    `json:"endpoint"`
+	Method         string    `json:"method"`
+	StatusCode     uint16    `json:"statusCode"`
+	IPAddress      *string   `json:"ipAddress,omitempty"`
+	UserAgent      *string   `json:"userAgent,omitempty"`
+	ResponseTimeMs *int      `json:"responseTimeMs,omitempty"`
+	CreatedAt      time.Time `json:"createdAt"`
+}
+
+type PersonalAccessTokenStore interface {
+	GetPATs(int) ([]PersonalAccessToken, error)
+	CreatePAT(string) (string, error)
+	RevokePAT(int, int) error
+	DeletePAT(int, int) error
+}

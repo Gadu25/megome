@@ -1,0 +1,22 @@
+CREATE TABLE IF NOT EXISTS personal_access_tokens (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  userId INT UNSIGNED NOT NULL,
+  name VARCHAR(100) NOT NULL,
+  tokenHash CHAR(64) NOT NULL,
+  lastUsedAt TIMESTAMP NULL DEFAULT NULL,
+  revokedAt TIMESTAMP NULL DEFAULT NULL,
+  createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (id),
+
+  UNIQUE KEY uq_token_hash (tokenHash),
+
+  INDEX idx_user_id (userId),
+  INDEX idx_revoked_at (revokedAt),
+
+  CONSTRAINT fk_pat_user
+    FOREIGN KEY (userId)
+    REFERENCES users(id)
+    ON DELETE CASCADE
+);

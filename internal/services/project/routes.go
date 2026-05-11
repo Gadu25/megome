@@ -78,11 +78,10 @@ func (h *Handler) handleViewProjects(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	payload := types.ProjectPayload{
-		Title:       r.FormValue("title"),
-		Description: r.FormValue("description"),
-		Link:        r.FormValue("link"),
-		GithubLink:  r.FormValue("githubLink"),
+	var payload types.ProjectPayload
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	// validate the payload
@@ -97,6 +96,7 @@ func (h *Handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 	project, err := h.projectStore.CreateProject(types.Project{
 		UserID:      userID,
 		Title:       payload.Title,
+		Status:      payload.Status,
 		Description: payload.Description,
 		Link:        payload.Link,
 		GithubLink:  payload.GithubLink,
@@ -116,11 +116,10 @@ func (h *Handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	payload := types.ProjectPayload{
-		Title:       r.FormValue("title"),
-		Description: r.FormValue("description"),
-		Link:        r.FormValue("link"),
-		GithubLink:  r.FormValue("githubLink"),
+	var payload types.ProjectPayload
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	// validate the payload
@@ -138,6 +137,7 @@ func (h *Handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	}
 	project, err := h.projectStore.UpdateProject(id, types.Project{
 		Title:       payload.Title,
+		Status:      payload.Status,
 		Description: payload.Description,
 		Link:        payload.Link,
 		GithubLink:  payload.GithubLink,

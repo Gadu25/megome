@@ -31,7 +31,7 @@ func NewHandler(userStore types.UserStore, patStore types.PersonalAccessTokenSto
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/pat", auth.WithJWTAuth(h.handleViewPATs, h.userStore)).Methods("POST")
+	router.HandleFunc("/pat", auth.WithJWTAuth(h.handleViewPATs, h.userStore)).Methods("GET")
 	router.HandleFunc("/pat", auth.WithJWTAuth(h.handleCreatePAT, h.userStore)).Methods("POST")
 	router.HandleFunc("/pat/{id}/revoke", auth.WithJWTAuth(h.handleRevokePAT, h.userStore)).Methods("POST")
 	router.HandleFunc("/pat/{id}", auth.WithJWTAuth(h.handleDeletePAT, h.userStore)).Methods("DELETE")
@@ -69,7 +69,8 @@ func (h *Handler) handleCreatePAT(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pat, err := h.patStore.CreatePAT(payload.Name)
+	userID := auth.GetUserIDFromContext(r.Context())
+	pat, err := h.patStore.CreatePAT(userID, payload.Name)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return

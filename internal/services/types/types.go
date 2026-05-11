@@ -321,7 +321,7 @@ type APIUsageLog struct {
 
 type PersonalAccessTokenStore interface {
 	GetPATs(int) ([]PersonalAccessToken, error)
-	CreatePAT(string) (string, error)
+	CreatePAT(int, string) (string, error)
 	RevokePAT(int, int) error
 	DeletePAT(int, int) error
 }

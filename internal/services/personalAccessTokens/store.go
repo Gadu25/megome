@@ -48,7 +48,7 @@ func (s *Store) CreatePAT(userId int, name string) (string, error) {
 
 	for i := 0; i < maxAttempts; i++ {
 
-		token, err := utils.GenerateRandomToken("pat")
+		token, err := utils.GenerateRandomToken("pat_")
 		if err != nil {
 			return "", err
 		}

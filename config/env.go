@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strconv"
@@ -10,11 +9,11 @@ import (
 type Config struct {
 	PublicHost string
 	Port       string
-	DBPort     string
 
 	DBUser                 string
 	DBPassword             string
-	DBAddress              string
+	DBHost                 string
+	DBPort                 string
 	DBName                 string
 	JWTExpirationInSeconds int64
 	JWTSecret              string
@@ -36,7 +35,7 @@ func initConfig() Config {
 		DBPort:     getEnv("DB_PORT", "3306"),
 		DBUser:     getEnv("DB_USER", "root"),
 		DBPassword: getEnv("DB_PASSWORD", ""),
-		DBAddress:  fmt.Sprintf("%s:%s", getEnv("DB_HOST", "127.0.0.1"), getEnv("DB_PORT", "3306")),
+		DBHost:     getEnv("DB_HOST", "127.0.0.1"),
 		DBName:     getEnv("DB_NAME", "megome"),
 		// JWTExpirationInSeconds: getEnvAsInt("JWT_EXP", 60*5),
 		JWTExpirationInSeconds: getEnvAsInt("JWT_EXP", 60),
@@ -73,8 +72,10 @@ func getEnvAsInt(key string, fallback int64) int64 {
 func validateConfig(cfg Config) {
 	required := map[string]string{
 		"JWT_SECRET":  cfg.JWTSecret,
+		"DB_HOST":     cfg.DBHost,
 		"DB_USER":     cfg.DBUser,
 		"DB_PASSWORD": cfg.DBPassword,
+		"DB_NAME":     cfg.DBName,
 	}
 
 	for key, value := range required {

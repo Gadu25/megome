@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"io"
 
+	"megome/internal/services/utils"
+
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"megome/internal/services/utils"
 )
 
 type R2Client struct {
@@ -48,7 +49,7 @@ func GenerateKey(prefix, filename string, fileType string) (string, error) {
 	if filename == "" {
 		return "", fmt.Errorf("filename cannot be empty")
 	}
-	return fmt.Sprintf("%s/%s", prefix, filename + fileType), nil
+	return fmt.Sprintf("%s/%s", prefix, filename+fileType), nil
 }
 
 // UploadFromReader uploads a file directly (server-side)
@@ -72,6 +73,9 @@ func (r *R2Client) DeleteObject(ctx context.Context, key string) error {
 	if err != nil {
 		return fmt.Errorf("failed to delete object %s: %w", key, err)
 	}
+
+	// DEBUG: verify request was sent
+	fmt.Printf("[R2 DELETE] bucket=%s key=%s\n", r.Bucket, key)
 
 	return nil
 }

@@ -39,6 +39,43 @@ func (s *Store) CreateProjectTech(projectTech types.ProjectTech) error {
 	return nil
 }
 
+func (s *Store) CreateProjectTechBatch(projectID int, techIDs []int) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// rollback safety
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	stmt, err := tx.Prepare(`INSERT INTO project_techs (projectId, techId) VALUES (?, ?)`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	defer stmt.Close()
+
+	for _, techID := range techIDs {
+		_, err = stmt.Exec(projectID, techID)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	// commit only if everything succeeded
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Store) DelteProjectTech(id int) error {
 	_, err := s.GetProjectTechById(id)
 	if err != nil {

@@ -21,9 +21,14 @@ type ProjectResponse struct {
 	Projects []types.Project `json:"projects"`
 }
 
+type FullProjectResponse struct {
+	Message  string              `json:"message"`
+	Projects []types.ProjectFull `json:"projects"`
+}
+
 type SingleProjResponse struct {
-	Message string        `json:"message"`
-	Project types.Project `json:"project"`
+	Message string            `json:"message"`
+	Project types.ProjectFull `json:"project"`
 }
 
 func NewHandler(projectStore types.ProjectStore, userStore types.UserStore) *Handler {
@@ -31,20 +36,40 @@ func NewHandler(projectStore types.ProjectStore, userStore types.UserStore) *Han
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/project", auth.WithJWTAuth(h.handleViewProject, h.userStore)).Methods("GET")
+	router.HandleFunc("/project", auth.WithJWTAuth(h.handleViewProjects, h.userStore)).Methods("GET")
+	router.HandleFunc("/project/{id}", auth.WithJWTAuth(h.handleViewProject, h.userStore)).Methods("GET")
 	router.HandleFunc("/project", auth.WithJWTAuth(h.handleCreateProject, h.userStore)).Methods("POST")
 	router.HandleFunc("/project/{id}", auth.WithJWTAuth(h.handleUpdateProject, h.userStore)).Methods("PUT")
 	router.HandleFunc("/project/{id}", auth.WithJWTAuth(h.handleDeleteProject, h.userStore)).Methods("DELETE")
 }
 
 func (h *Handler) handleViewProject(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetUserIDFromContext(r.Context())
-	projects, err := h.projectStore.GetProjects(userID)
+	id, err := utils.GetRequestId(r)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	resp := ProjectResponse{
+
+	project, err := h.projectStore.GetProjectById(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := SingleProjResponse{
+		Message: "Project fetched successfully",
+		Project: project,
+	}
+	utils.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) handleViewProjects(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetUserIDFromContext(r.Context())
+	projects, err := h.projectStore.GetProjectsFull(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := FullProjectResponse{
 		Message:  "Project fetched successfully",
 		Projects: projects,
 	}
@@ -53,11 +78,10 @@ func (h *Handler) handleViewProject(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	payload := types.ProjectPayload{
-		Title:       r.FormValue("title"),
-		Description: r.FormValue("description"),
-		Link:        r.FormValue("link"),
-		GithubLink:  r.FormValue("githubLink"),
+	var payload types.ProjectPayload
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	// validate the payload
@@ -72,6 +96,7 @@ func (h *Handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 	project, err := h.projectStore.CreateProject(types.Project{
 		UserID:      userID,
 		Title:       payload.Title,
+		Status:      payload.Status,
 		Description: payload.Description,
 		Link:        payload.Link,
 		GithubLink:  payload.GithubLink,
@@ -91,11 +116,10 @@ func (h *Handler) handleCreateProject(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	payload := types.ProjectPayload{
-		Title:       r.FormValue("title"),
-		Description: r.FormValue("description"),
-		Link:        r.FormValue("link"),
-		GithubLink:  r.FormValue("githubLink"),
+	var payload types.ProjectPayload
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	// validate the payload
@@ -113,9 +137,11 @@ func (h *Handler) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	}
 	project, err := h.projectStore.UpdateProject(id, types.Project{
 		Title:       payload.Title,
+		Status:      payload.Status,
 		Description: payload.Description,
 		Link:        payload.Link,
 		GithubLink:  payload.GithubLink,
+		IsDraft:     payload.IsDraft,
 	})
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)

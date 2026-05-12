@@ -186,31 +186,35 @@ type CertificationPayload struct {
 }
 
 type TechnologyStore interface {
-	GetTechnologies(userId int) ([]Technology, error)
+	GetTechnologies() ([]Technology, error)
 	CreateTechnology(Technology) error
 	UpdateTechnology(id int, technology Technology) error
 	DeleteTechnology(id int) error
 }
 
 type Technology struct {
-	ID        int     `json:"id"`
-	UserID    int     `json:"userId"`
-	Name      string  `json:"name"`
-	Slug      string  `json:"slug"`
-	CreatedAt string  `json:"createdAt"`
-	UpdatedAt *string `json:"updatedAt"`
+	ID              int     `json:"id"`
+	CreatedByUserId *int    `json:"createdByUserId"`
+	Name            string  `json:"name"`
+	Slug            string  `json:"slug"`
+	Category        string  `json:"category"`
+	IsVerified      string  `json:"isVerified"`
+	CreatedAt       string  `json:"createdAt"`
+	UpdatedAt       *string `json:"updatedAt"`
 }
 
 type TechnologyPayload struct {
-	Name string `json:"name"`
-	Slug string `json:"slug"`
+	Name     string `json:"name"`
+	Category string `json:"category"`
 }
 
 type ProjectStore interface {
+	GetProjectById(int) (ProjectFull, error)
 	GetProjects(int) ([]Project, error)
-	CreateProject(Project) (Project, error)
-	UpdateProject(int, Project) (Project, error)
-	DeleteProject(int) (Project, error)
+	GetProjectsFull(int) ([]ProjectFull, error)
+	CreateProject(Project) (ProjectFull, error)
+	UpdateProject(int, Project) (ProjectFull, error)
+	DeleteProject(int) (ProjectFull, error)
 }
 
 type Project struct {
@@ -220,8 +224,22 @@ type Project struct {
 	Description string  `json:"description"`
 	Link        string  `json:"link"`
 	GithubLink  string  `json:"githubLink"`
+	Status      string  `json:"status"`
+	IsDraft     bool    `json:"isDraft"`
 	CreatedAt   string  `json:"createdAt"`
 	UpdatedAt   *string `json:"updatedAt"`
+}
+
+type ProjectImages struct {
+	Cover       *string  `json:"cover"`
+	Screenshots []string `json:"screenshots"`
+}
+
+type ProjectFull struct {
+	Project
+
+	Images       ProjectImages `json:"images"`
+	Technologies []Technology  `json:"technologies"`
 }
 
 type ProjectPayload struct {
@@ -229,10 +247,31 @@ type ProjectPayload struct {
 	Description string `json:"description"`
 	Link        string `json:"link"`
 	GithubLink  string `json:"githubLink"`
+	Status      string `json:"status"`
+	IsDraft     bool   `json:"isDraft"`
+}
+
+type ProjectImageStore interface {
+	GetProjectImageByID(int) (ProjectImage, error)
+	GetProjectImages(int) ([]ProjectImage, error)
+	AddProjectImage(ProjectImage) (ProjectImage, error)
+	DeleteProjectImage(int) error
+	SetProjectCover(int, ProjectImage) (ProjectImage, error)
+}
+
+type ProjectImage struct {
+	ID        int    `json:"id"`
+	ProjectID int    `json:"projectId"`
+	URL       string `json:"url"`
+	Type      string `json:"type"`
+	Position  *int   `json:"position"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
 }
 
 type ProjectTechStore interface {
 	CreateProjectTech(ProjectTech) error
+	CreateProjectTechBatch(int, []int) error
 	DelteProjectTech(int) error
 }
 
@@ -246,4 +285,8 @@ type ProjectTech struct {
 type ProjectTechPayload struct {
 	ProjectID int `json:"projectId"`
 	TechID    int `json:"techId"`
+}
+
+type BatchProjectTechPayload struct {
+	TechIDs []int `json:"techIds" validate:"required,min=1"`
 }

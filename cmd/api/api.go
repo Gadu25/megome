@@ -10,6 +10,7 @@ import (
 	"megome/internal/services/initData"
 	"megome/internal/services/profile"
 	"megome/internal/services/project"
+	projectimages "megome/internal/services/projectImages"
 	projecttech "megome/internal/services/projectTech"
 	"megome/internal/services/refreshToken"
 	"megome/internal/services/skill"
@@ -102,9 +103,13 @@ func (s *APIServer) Run() error {
 	technologyHandler := technology.NewHandler(technologyStore, userStore)
 	technologyHandler.RegisterRoutes(subrouter)
 
-	projectStore := project.NewStore(s.db)
+	projectStore := project.NewStore(s.db, r2Client)
 	projectHandler := project.NewHandler(projectStore, userStore)
 	projectHandler.RegisterRoutes(subrouter)
+
+	projectImageStore := projectimages.NewStore(s.db)
+	projectImageHandler := projectimages.NewHandler(projectImageStore, userStore, r2Client)
+	projectImageHandler.RegisterRoutes(subrouter)
 
 	projectTechStore := projecttech.NewStore(s.db)
 	projectTechHandler := projecttech.NewHandler(projectTechStore, userStore)

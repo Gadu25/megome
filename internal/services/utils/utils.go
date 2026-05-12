@@ -1,8 +1,11 @@
 package utils
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math/rand"
 	"megome/config"
 	"net/http"
 	"net/url"
@@ -11,6 +14,7 @@ import (
 	"time"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
@@ -136,4 +140,25 @@ func ExtractR2Key(input string) string {
 
 func GenerateUUID() string {
 	return uuid.NewString()
+}
+
+func GenerateRandomToken(prefix string) (string, error) {
+	b := make([]byte, 32) // 256-bit token
+
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+
+	token := hex.EncodeToString(b)
+
+	return prefix + token, nil
+}
+
+func IsMysqlDuplicateKeyError(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	if errors.As(err, &mysqlErr) {
+		// reserved error number for duplicate entry
+		return mysqlErr.Number == 1062
+	}
+	return false
 }

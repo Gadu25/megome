@@ -8,6 +8,7 @@ import (
 	"megome/internal/services/education"
 	"megome/internal/services/experience"
 	"megome/internal/services/initData"
+	personalaccesstokens "megome/internal/services/personalAccessTokens"
 	"megome/internal/services/profile"
 	"megome/internal/services/project"
 	projectimages "megome/internal/services/projectImages"
@@ -114,6 +115,10 @@ func (s *APIServer) Run() error {
 	projectTechStore := projecttech.NewStore(s.db)
 	projectTechHandler := projecttech.NewHandler(projectTechStore, userStore)
 	projectTechHandler.RegisterRoutes(subrouter)
+
+	personalAccessTokenStore := personalaccesstokens.NewStore(s.db)
+	personalAccesstokenHandler := personalaccesstokens.NewHandler(userStore, personalAccessTokenStore)
+	personalAccesstokenHandler.RegisterRoutes(subrouter)
 
 	// for CORS
 	corsRouter := CORS(router)

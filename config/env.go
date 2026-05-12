@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 )
@@ -9,6 +10,7 @@ import (
 type Config struct {
 	PublicHost string
 	Port       string
+	DBPort     string
 
 	DBUser                 string
 	DBPassword             string
@@ -30,14 +32,15 @@ var Envs Config
 func initConfig() Config {
 	return Config{
 		PublicHost: getEnv("PUBLIC_HOST", "http://localhost"),
-		Port:       getEnv("PORT", "3306"),
+		Port:       getEnv("PORT", "8080"),
+		DBPort:     getEnv("DB_PORT", "3306"),
 		DBUser:     getEnv("DB_USER", "root"),
 		DBPassword: getEnv("DB_PASSWORD", ""),
 		DBAddress:  fmt.Sprintf("%s:%s", getEnv("DB_HOST", "127.0.0.1"), getEnv("DB_PORT", "3306")),
 		DBName:     getEnv("DB_NAME", "megome"),
 		// JWTExpirationInSeconds: getEnvAsInt("JWT_EXP", 60*5),
 		JWTExpirationInSeconds: getEnvAsInt("JWT_EXP", 60),
-		JWTSecret:              getEnv("JWT_SECRET", "not-secret-anymore?"),
+		JWTSecret:              getEnv("JWT_SECRET", ""),
 		R2AccountId:            getEnv("R2_ACCOUNT_ID", "4ee86bb26d20c0c74970845960bec979"),
 		R2AccessKeyId:          getEnv("R2_ACCESS_KEY_ID", "783e12a9c12ecd2c966fbbac42225c5d"),
 		R2SecretAccessKey:      getEnv("R2_SECRET_ACCESS_KEY", "3140e4fdea0f3ad4099205c41caf4270478eceb7cfcb5a6183f3897b90c777d4"),
@@ -67,6 +70,21 @@ func getEnvAsInt(key string, fallback int64) int64 {
 	return fallback
 }
 
+func validateConfig(cfg Config) {
+	required := map[string]string{
+		"JWT_SECRET":  cfg.JWTSecret,
+		"DB_USER":     cfg.DBUser,
+		"DB_PASSWORD": cfg.DBPassword,
+	}
+
+	for key, value := range required {
+		if value == "" {
+			log.Fatalf("missing required env: %s", key)
+		}
+	}
+}
+
 func Load() {
 	Envs = initConfig()
+	validateConfig(Envs)
 }

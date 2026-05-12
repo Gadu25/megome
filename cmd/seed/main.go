@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"megome/config"
 	"megome/internal/data/db"
@@ -17,7 +18,7 @@ func main() {
 	dbConn, err := db.NewMySQLStorage(mysqlCfg.Config{
 		User:                 config.Envs.DBUser,
 		Passwd:               config.Envs.DBPassword,
-		Addr:                 config.Envs.DBAddress,
+		Addr:                 fmt.Sprintf("%s:%s", config.Envs.DBHost, config.Envs.DBPort),
 		DBName:               config.Envs.DBName,
 		Net:                  "tcp",
 		AllowNativePasswords: true,

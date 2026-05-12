@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"megome/cmd/api"
 	"megome/config"
@@ -18,7 +19,7 @@ func main() {
 	db, err := db.NewMySQLStorage(mysql.Config{
 		User:                 config.Envs.DBUser,
 		Passwd:               config.Envs.DBPassword,
-		Addr:                 config.Envs.DBAddress,
+		Addr:                 fmt.Sprintf("%s:%s", config.Envs.DBHost, config.Envs.DBPort),
 		DBName:               config.Envs.DBName,
 		Net:                  "tcp",
 		AllowNativePasswords: true,
@@ -31,7 +32,7 @@ func main() {
 
 	initStorage(db)
 
-	server := api.NewAPIServer(":8080", db)
+	server := api.NewAPIServer(":"+config.Envs.Port, db)
 	if err := server.Run(); err != nil {
 		log.Fatal((err))
 	}

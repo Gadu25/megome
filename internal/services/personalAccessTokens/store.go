@@ -17,6 +17,36 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
+func (s *Store) GetPATByToken(token string) (types.PATMinified, error) {
+	row := s.db.QueryRow(`
+		SELECT
+			id,
+			userId,
+			name,
+			tokenHash,
+			revokedAt
+		FROM personal_access_tokens
+		WHERE tokenHash = ?
+		LIMIT 1
+	`, token)
+
+	var pat types.PATMinified
+
+	err := row.Scan(
+		&pat.ID,
+		&pat.UserID,
+		&pat.Name,
+		&pat.TokenHash,
+		&pat.RevokedAt,
+	)
+
+	if err != nil {
+		return types.PATMinified{}, err
+	}
+
+	return pat, nil
+}
+
 func (s *Store) GetPATs(userId int) ([]types.PersonalAccessToken, error) {
 	rows, err := s.db.Query(`
 		SELECT id, name, lastUsedAt, revokedAt, createdAt, updatedAt

@@ -14,6 +14,11 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
+func (s *Store) GetPublicProfile(userId int) (*types.Profile, error) {
+	row := s.db.QueryRow("SELECT * FROM profiles WHERE userId = ? LIMIT 1", userId)
+	return scanRowIntoProfile(row)
+}
+
 func (s *Store) GetProfile(userId int) (*types.Profile, error) {
 	row := s.db.QueryRow("SELECT * FROM profiles WHERE userId = ? LIMIT 1", userId)
 	return scanRowIntoProfile(row)

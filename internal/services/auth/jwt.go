@@ -14,14 +14,10 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-type contextKey string
-
 type Claims struct {
 	UserID string `json:"userId"`
 	jwt.RegisteredClaims
 }
-
-const UserKey contextKey = "userID"
 
 func CreateJWT(secret []byte, userID int) (string, error) {
 	expiration := time.Duration(config.Envs.JWTExpirationInSeconds) * time.Second
@@ -75,7 +71,7 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, store types.UserStore) http.Handl
 
 func getTokenFromRequest(r *http.Request) string {
 	cookie, err := r.Cookie("Authentication")
-	
+
 	if err != nil {
 		return ""
 	}

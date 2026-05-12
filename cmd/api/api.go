@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"megome/config"
+	apilogs "megome/internal/services/apiLogs"
 	"megome/internal/services/certification"
 	"megome/internal/services/education"
 	"megome/internal/services/experience"
@@ -13,6 +14,7 @@ import (
 	"megome/internal/services/project"
 	projectimages "megome/internal/services/projectImages"
 	projecttech "megome/internal/services/projectTech"
+	publicprofile "megome/internal/services/public/profile"
 	"megome/internal/services/refreshToken"
 	"megome/internal/services/skill"
 	"megome/internal/services/storage"
@@ -31,7 +33,7 @@ type APIServer struct {
 func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Allow frontend origin
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+		w.Header().Set("Access-Control-Allow-Origin", config.Envs.FrontendUrl)
 		w.Header().Set("Access-Control-Allow-Credentials", "true") // important for cookies
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
@@ -55,7 +57,8 @@ func NewAPIServer(addr string, db *sql.DB) *APIServer {
 
 func (s *APIServer) Run() error {
 	router := mux.NewRouter()
-	subrouter := router.PathPrefix("/api/v1").Subrouter()
+	internal := router.PathPrefix("/api/v1").Subrouter()
+	public := router.PathPrefix("/public/v1").Subrouter()
 
 	r2Cfg := storage.Config{
 		AccessKey: config.Envs.R2AccessKeyId,
@@ -71,54 +74,62 @@ func (s *APIServer) Run() error {
 
 	refreshStore := refreshToken.NewStore(s.db)
 	refreshHandler := refreshToken.NewHandler(refreshStore)
-	refreshHandler.RegisterRoutes(subrouter)
+	refreshHandler.RegisterRoutes(internal)
 
 	userStore := user.NewStore(s.db)
 	userHandler := user.NewHandler(userStore, refreshStore)
-	userHandler.RegisterRoutes(subrouter)
+	userHandler.RegisterRoutes(internal)
 
 	profileStore := profile.NewStore(s.db)
 	profileHandler := profile.NewHandler(profileStore, userStore, r2Client)
-	profileHandler.RegisterRoutes(subrouter)
+	profileHandler.RegisterRoutes(internal)
 
 	initHandler := initData.NewHandler(profileStore, userStore)
-	initHandler.RegisterRoutes(subrouter)
+	initHandler.RegisterRoutes(internal)
 
 	experienceStore := experience.NewStore(s.db)
 	experienceHandler := experience.NewHandler(experienceStore, userStore)
-	experienceHandler.RegisterRoutes(subrouter)
+	experienceHandler.RegisterRoutes(internal)
 
 	skillStore := skill.NewStore(s.db)
 	skillHandler := skill.NewHandler(skillStore, userStore)
-	skillHandler.RegisterRoutes(subrouter)
+	skillHandler.RegisterRoutes(internal)
 
 	educationStore := education.NewStore(s.db)
 	educationHandler := education.NewHandler(educationStore, userStore)
-	educationHandler.RegisterRoutes(subrouter)
+	educationHandler.RegisterRoutes(internal)
 
 	certificationStore := certification.NewStore(s.db)
 	certificationHandler := certification.NewHandler(certificationStore, userStore)
-	certificationHandler.RegisterRoutes(subrouter)
+	certificationHandler.RegisterRoutes(internal)
 
 	technologyStore := technology.NewStore(s.db)
 	technologyHandler := technology.NewHandler(technologyStore, userStore)
-	technologyHandler.RegisterRoutes(subrouter)
+	technologyHandler.RegisterRoutes(internal)
 
 	projectStore := project.NewStore(s.db, r2Client)
 	projectHandler := project.NewHandler(projectStore, userStore)
-	projectHandler.RegisterRoutes(subrouter)
+	projectHandler.RegisterRoutes(internal)
 
 	projectImageStore := projectimages.NewStore(s.db)
 	projectImageHandler := projectimages.NewHandler(projectImageStore, userStore, r2Client)
-	projectImageHandler.RegisterRoutes(subrouter)
+	projectImageHandler.RegisterRoutes(internal)
 
 	projectTechStore := projecttech.NewStore(s.db)
 	projectTechHandler := projecttech.NewHandler(projectTechStore, userStore)
-	projectTechHandler.RegisterRoutes(subrouter)
+	projectTechHandler.RegisterRoutes(internal)
 
 	personalAccessTokenStore := personalaccesstokens.NewStore(s.db)
 	personalAccesstokenHandler := personalaccesstokens.NewHandler(userStore, personalAccessTokenStore)
-	personalAccesstokenHandler.RegisterRoutes(subrouter)
+	personalAccesstokenHandler.RegisterRoutes(internal)
+
+	// PUBLIC
+	apiLogStore := apilogs.NewStore(s.db)
+
+	publicProfileStore := profile.NewStore(s.db)
+	publicProfileHandler := publicprofile.NewHandler(publicProfileStore, personalAccessTokenStore, apiLogStore)
+
+	publicProfileHandler.RegisterRoutes(public)
 
 	// for CORS
 	corsRouter := CORS(router)

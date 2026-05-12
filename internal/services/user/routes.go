@@ -58,11 +58,12 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 	}
 
-	utils.SetRefreshTokenCookie(w, rt)
-	utils.SetAccessTokenCookie(w, at)
+	// utils.SetRefreshTokenCookie(w, rt)
+	// utils.SetAccessTokenCookie(w, at)
 	resp := types.AuthResponse{
-		Success: true,
-		Message: "Account was successfully logged in!",
+		Message:      "Account was successfully logged in!",
+		AccessToken:  at,
+		RefreshToken: rt,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
@@ -95,8 +96,8 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := h.userStore.CreateUser(types.User{
-		Email:     payload.Email,
-		Password:  hashedPassword,
+		Email:    payload.Email,
+		Password: hashedPassword,
 	})
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
@@ -105,12 +106,13 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	at, rt, err := h.getTokens(user.ID)
 
-	utils.SetRefreshTokenCookie(w, rt)
-	utils.SetAccessTokenCookie(w, at)
+	// utils.SetRefreshTokenCookie(w, rt)
+	// utils.SetAccessTokenCookie(w, at)
 
 	resp := types.AuthResponse{
-		Success: true,
-		Message: "Your account is successfully registered!",
+		Message:      "Your account is successfully registered!",
+		AccessToken:  at,
+		RefreshToken: rt,
 	}
 	utils.WriteJSON(w, http.StatusCreated, resp)
 }
@@ -129,10 +131,9 @@ func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := types.AuthResponse{
-		Success: true,
 		Message: "User successfully logged out!",
 	}
-	utils.ClearAllTokens(w)
+	// utils.ClearAllTokens(w)
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
@@ -150,7 +151,6 @@ func (h *Handler) handleVerify(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("verified!")
 
 	resp := types.AuthResponse{
-		Success: true,
 		Message: "access-token is valid",
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)

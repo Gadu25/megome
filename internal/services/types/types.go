@@ -50,6 +50,7 @@ type AuthResponse struct {
 }
 
 type ProfileStore interface {
+	GetPublicProfile(int) (*Profile, error)
 	GetProfile(userId int) (*Profile, error)
 	MakeProfile(Profile) error
 }
@@ -68,6 +69,18 @@ type Profile struct {
 	ProfileImage string `json:"profileImage"`
 	CreatedAt    string `json:"createdAt"`
 	UpdatedAt    string `json:"updatedAt"`
+}
+type PublicProfileResponse struct {
+	ID           int    `json:"id"`
+	FirstName    string `json:"firstName"`
+	LastName     string `json:"lastName"`
+	Title        string `json:"title"`
+	Birthday     string `json:"birthday"`
+	Bio          string `json:"bio"`
+	Phone        string `json:"phone"`
+	Website      string `json:"website"`
+	Location     string `json:"location"`
+	ProfileImage string `json:"profileImage"`
 }
 
 type MakeProfilePayload struct {
@@ -302,6 +315,14 @@ type PersonalAccessToken struct {
 	UpdatedAt  time.Time  `json:"updatedAt"`
 }
 
+type PATMinified struct {
+	ID        int
+	UserID    int
+	Name      string
+	TokenHash string
+	RevokedAt *time.Time
+}
+
 type PersonalAccessTokenPayload struct {
 	Name string `json:"name" validate:"required"`
 }
@@ -312,14 +333,19 @@ type APIUsageLog struct {
 	TokenID        int       `json:"tokenId"`
 	Endpoint       string    `json:"endpoint"`
 	Method         string    `json:"method"`
-	StatusCode     uint16    `json:"statusCode"`
-	IPAddress      *string   `json:"ipAddress,omitempty"`
-	UserAgent      *string   `json:"userAgent,omitempty"`
-	ResponseTimeMs *int      `json:"responseTimeMs,omitempty"`
+	StatusCode     int       `json:"statusCode"`
+	IPAddress      string    `json:"ipAddress,omitempty"`
+	UserAgent      string    `json:"userAgent,omitempty"`
+	ResponseTimeMs int       `json:"responseTimeMs,omitempty"`
 	CreatedAt      time.Time `json:"createdAt"`
 }
 
+type APIUsageLogStore interface {
+	Create(log APIUsageLog) error
+}
+
 type PersonalAccessTokenStore interface {
+	GetPATByToken(string) (PATMinified, error)
 	GetPATs(int) ([]PersonalAccessToken, error)
 	CreatePAT(int, string) (string, error)
 	RevokePAT(int, int) error

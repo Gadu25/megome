@@ -50,9 +50,9 @@ func SetRefreshTokenCookie(w http.ResponseWriter, token string) {
 		// Domain: ".megome.com",
 		Value:    token,
 		HttpOnly: true,
-		Secure:   false, // false only in local dev
+		Secure:   true, // false only in local dev
 		Path:     "/",
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteNoneMode,
 		Expires:  time.Now().Add(14 * 24 * time.Hour),
 	})
 }
@@ -63,9 +63,9 @@ func SetAccessTokenCookie(w http.ResponseWriter, token string) {
 		// Domain: ".megome.com",
 		Value:    token,
 		HttpOnly: true,
-		Secure:   false, // false only in local dev
+		Secure:   true, // false only in local dev
 		Path:     "/",
-		SameSite: http.SameSiteLaxMode,
+		SameSite: http.SameSiteNoneMode,
 	})
 }
 

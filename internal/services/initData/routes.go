@@ -24,7 +24,7 @@ type Handler struct {
 }
 
 type InitResponse struct {
-	success bool
+	Success bool `json:"success"`
 	InitData
 }
 
@@ -45,7 +45,7 @@ func (h *Handler) handleInit(w http.ResponseWriter, r *http.Request) {
 	}
 
 	initResp := InitResponse{
-		success:  true,
+		Success:  true,
 		InitData: init,
 	}
 

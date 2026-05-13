@@ -35,6 +35,7 @@ func (h *Handler) handleRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := types.AuthResponse{
+		Success:      true,
 		Message:      "Token refreshed!",
 		AccessToken:  newAccessToken,
 		RefreshToken: newRefreshToken,

@@ -61,6 +61,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 	// utils.SetRefreshTokenCookie(w, rt)
 	// utils.SetAccessTokenCookie(w, at)
 	resp := types.AuthResponse{
+		Success:      true,
 		Message:      "Account was successfully logged in!",
 		AccessToken:  at,
 		RefreshToken: rt,
@@ -110,6 +111,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	// utils.SetAccessTokenCookie(w, at)
 
 	resp := types.AuthResponse{
+		Success:      true,
 		Message:      "Your account is successfully registered!",
 		AccessToken:  at,
 		RefreshToken: rt,
@@ -131,6 +133,7 @@ func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := types.AuthResponse{
+		Success: true,
 		Message: "User successfully logged out!",
 	}
 	// utils.ClearAllTokens(w)
@@ -151,6 +154,7 @@ func (h *Handler) handleVerify(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("verified!")
 
 	resp := types.AuthResponse{
+		Success: true,
 		Message: "access-token is valid",
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)

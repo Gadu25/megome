@@ -45,6 +45,7 @@ type LoginUserPayload struct {
 }
 
 type AuthResponse struct {
+	Success      bool   `json:"success"`
 	Message      string `json:"message"`
 	AccessToken  string `json:"accessToken"`
 	RefreshToken string `json:"refreshToken"`

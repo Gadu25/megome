@@ -53,9 +53,10 @@ func (h *Handler) handleViewSkills(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleCreateSkill(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	payload := types.SkillPayload{
-		SkillName:   r.FormValue("skillName"),
-		Proficiency: r.FormValue("proficiency"),
+	var payload types.SkillPayload
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	// validate the payload
@@ -87,9 +88,10 @@ func (h *Handler) handleCreateSkill(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleUpdateSkill(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	payload := types.SkillPayload{
-		SkillName:   r.FormValue("skillName"),
-		Proficiency: r.FormValue("proficiency"),
+	var payload types.SkillPayload
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	// validate the payload

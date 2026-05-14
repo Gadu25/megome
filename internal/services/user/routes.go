@@ -120,13 +120,13 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("refresh_token")
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Error getting cookie %v", err))
+	refreshToken := utils.GetTokenFromRequest(r)
+	if refreshToken == "" {
+		permissionDenied(w, "invalid token")
 		return
 	}
 
-	err = h.refreshStore.LogoutUser(cookie.Value)
+	err := h.refreshStore.LogoutUser(refreshToken)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
@@ -171,4 +171,8 @@ func (h *Handler) getTokens(userId int) (string, string, error) {
 		return "", "", err
 	}
 	return accessToken, refreshToken, nil
+}
+
+func permissionDenied(w http.ResponseWriter, m string) {
+	utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("permission denied %v", m))
 }

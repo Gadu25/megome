@@ -18,7 +18,7 @@ type Handler struct {
 
 type EducationResponse struct {
 	Message   string            `json:"message"`
-	Education []types.Education `json:"education"`
+	Education []types.Education `json:"educations"`
 }
 
 type SingleEducResponse struct {
@@ -50,14 +50,13 @@ func (h *Handler) handleViewEducation(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
+
 func (h *Handler) handleCreateEducation(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	payload := types.EducationPayload{
-		School:       r.FormValue("school"),
-		Degree:       r.FormValue("degree"),
-		FieldOfStudy: r.FormValue("fieldOfStudy"),
-		StartDate:    r.FormValue("startDate"),
-		EndDate:      r.FormValue("endDate"),
+	var payload types.EducationPayload
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	// validate the payload
@@ -88,14 +87,13 @@ func (h *Handler) handleCreateEducation(w http.ResponseWriter, r *http.Request) 
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
+
 func (h *Handler) handleEditEducation(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	payload := types.EducationPayload{
-		School:       r.FormValue("school"),
-		Degree:       r.FormValue("degree"),
-		FieldOfStudy: r.FormValue("fieldOfStudy"),
-		StartDate:    r.FormValue("startDate"),
-		EndDate:      r.FormValue("endDate"),
+	var payload types.EducationPayload
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	// validate the payload

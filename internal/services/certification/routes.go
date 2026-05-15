@@ -53,31 +53,10 @@ func (h *Handler) handleViewCertification(w http.ResponseWriter, r *http.Request
 
 func (h *Handler) handleCreateCertification(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	expirationStr := r.FormValue("expirationDate")
-	credentialIdStr := r.FormValue("credentialId")
-	credentialUrlStr := r.FormValue("credentialUrl")
-
-	var expiration *string
-	var credentialId *string
-	var credentialUrl *string
-
-	if expirationStr != "" {
-		expiration = &expirationStr
-	}
-	if credentialIdStr != "" {
-		credentialId = &credentialIdStr
-	}
-	if credentialUrlStr != "" {
-		credentialUrl = &credentialUrlStr
-	}
-
-	payload := types.CertificationPayload{
-		Title:          r.FormValue("title"),
-		Issuer:         r.FormValue("issuer"),
-		IssueDate:      r.FormValue("issueDate"),
-		ExpirationDate: expiration,
-		CredentialId:   credentialId,
-		CredentialUrl:  credentialUrl,
+	var payload types.CertificationPayload
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	// validate the payload
@@ -105,38 +84,17 @@ func (h *Handler) handleCreateCertification(w http.ResponseWriter, r *http.Reque
 	}
 
 	resp := SingleCertResponse{
-		Message:     "Certification fetched successfully",
+		Message:     "Certification created successfully",
 		Certificate: cert,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 func (h *Handler) handleEditCertification(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	expirationStr := r.FormValue("expirationDate")
-	credentialIdStr := r.FormValue("credentialId")
-	credentialUrlStr := r.FormValue("credentialUrl")
-
-	var expiration *string
-	var credentialId *string
-	var credentialUrl *string
-
-	if expirationStr != "" {
-		expiration = &expirationStr
-	}
-	if credentialIdStr != "" {
-		credentialId = &credentialIdStr
-	}
-	if credentialUrlStr != "" {
-		credentialUrl = &credentialUrlStr
-	}
-
-	payload := types.CertificationPayload{
-		Title:          r.FormValue("title"),
-		Issuer:         r.FormValue("issuer"),
-		IssueDate:      r.FormValue("issueDate"),
-		ExpirationDate: expiration,
-		CredentialId:   credentialId,
-		CredentialUrl:  credentialUrl,
+	var payload types.CertificationPayload
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	// validate the payload
@@ -166,14 +124,14 @@ func (h *Handler) handleEditCertification(w http.ResponseWriter, r *http.Request
 	}
 
 	resp := SingleCertResponse{
-		Message:     "Certification fetched successfully",
+		Message:     "Certification edited successfully",
 		Certificate: cert,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 func (h *Handler) handleDeleteCertification(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.GetRequestId(r)
-
+	fmt.Println("[DEBUG]", id)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
@@ -186,7 +144,7 @@ func (h *Handler) handleDeleteCertification(w http.ResponseWriter, r *http.Reque
 	}
 
 	resp := SingleCertResponse{
-		Message:     "Certification fetched successfully",
+		Message:     "Certification deleted successfully",
 		Certificate: cert,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)

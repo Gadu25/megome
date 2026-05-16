@@ -162,3 +162,15 @@ func IsMysqlDuplicateKeyError(err error) bool {
 	}
 	return false
 }
+
+func GetTokenFromRequest(r *http.Request) string {
+	authHeader := r.Header.Get("Authorization")
+
+	parts := strings.SplitN(authHeader, " ", 2)
+
+	if len(parts) != 2 || parts[0] != "Bearer" || parts[1] == "" {
+		return ""
+	}
+
+	return parts[1]
+}

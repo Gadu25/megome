@@ -58,11 +58,13 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 	}
 
-	utils.SetRefreshTokenCookie(w, rt)
-	utils.SetAccessTokenCookie(w, at)
+	// utils.SetRefreshTokenCookie(w, rt)
+	// utils.SetAccessTokenCookie(w, at)
 	resp := types.AuthResponse{
-		Success: true,
-		Message: "Account was successfully logged in!",
+		Success:      true,
+		Message:      "Account was successfully logged in!",
+		AccessToken:  at,
+		RefreshToken: rt,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
@@ -95,8 +97,8 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := h.userStore.CreateUser(types.User{
-		Email:     payload.Email,
-		Password:  hashedPassword,
+		Email:    payload.Email,
+		Password: hashedPassword,
 	})
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
@@ -105,24 +107,26 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	at, rt, err := h.getTokens(user.ID)
 
-	utils.SetRefreshTokenCookie(w, rt)
-	utils.SetAccessTokenCookie(w, at)
+	// utils.SetRefreshTokenCookie(w, rt)
+	// utils.SetAccessTokenCookie(w, at)
 
 	resp := types.AuthResponse{
-		Success: true,
-		Message: "Your account is successfully registered!",
+		Success:      true,
+		Message:      "Your account is successfully registered!",
+		AccessToken:  at,
+		RefreshToken: rt,
 	}
 	utils.WriteJSON(w, http.StatusCreated, resp)
 }
 
 func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("refresh_token")
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Error getting cookie %v", err))
+	refreshToken := utils.GetTokenFromRequest(r)
+	if refreshToken == "" {
+		permissionDenied(w, "invalid token")
 		return
 	}
 
-	err = h.refreshStore.LogoutUser(cookie.Value)
+	err := h.refreshStore.LogoutUser(refreshToken)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
@@ -132,7 +136,7 @@ func (h *Handler) handleLogout(w http.ResponseWriter, r *http.Request) {
 		Success: true,
 		Message: "User successfully logged out!",
 	}
-	utils.ClearAllTokens(w)
+	// utils.ClearAllTokens(w)
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
@@ -167,4 +171,8 @@ func (h *Handler) getTokens(userId int) (string, string, error) {
 		return "", "", err
 	}
 	return accessToken, refreshToken, nil
+}
+
+func permissionDenied(w http.ResponseWriter, m string) {
+	utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("permission denied %v", m))
 }

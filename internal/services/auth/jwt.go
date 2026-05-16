@@ -38,7 +38,7 @@ func CreateJWT(secret []byte, userID int) (string, error) {
 
 func WithJWTAuth(handlerFunc http.HandlerFunc, store types.UserStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tokenString := getTokenFromRequest(r)
+		tokenString := utils.GetTokenFromRequest(r)
 		if tokenString == "" {
 			permissionDenied(w, "invalid token")
 			return
@@ -67,16 +67,6 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, store types.UserStore) http.Handl
 		ctx := context.WithValue(r.Context(), UserKey, u.ID)
 		handlerFunc(w, r.WithContext(ctx))
 	}
-}
-
-func getTokenFromRequest(r *http.Request) string {
-	cookie, err := r.Cookie("Authentication")
-
-	if err != nil {
-		return ""
-	}
-
-	return cookie.Value
 }
 
 func validateToken(t string) (*Claims, error) {

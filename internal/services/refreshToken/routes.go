@@ -22,30 +22,27 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 }
 
 func (h *Handler) handleRefresh(w http.ResponseWriter, r *http.Request) {
-	// fmt.Println("=== HEADERS HANDLE REFRESH ===")
-	// for key, values := range r.Header {
-	// 	for _, value := range values {
-	// 		fmt.Printf("%s: %s\n", key, value)
-	// 	}
-	// }
-	cookie, err := r.Cookie("refresh_token")
-	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Error getting refresh cookie %v", err))
+	refreshToken := utils.GetTokenFromRequest(r)
+	if refreshToken == "" {
+		permissionDenied(w, "invalid token")
 		return
 	}
 
-	newRefreshToken, newAccessToken, err := h.refreshStore.RefreshRotation(cookie.Value)
+	newRefreshToken, newAccessToken, err := h.refreshStore.RefreshRotation(refreshToken)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Cookie error %v", err))
 		return
 	}
 
-	utils.SetRefreshTokenCookie(w, newRefreshToken)
-	utils.SetAccessTokenCookie(w, newAccessToken)
-
 	resp := types.AuthResponse{
-		Success: true,
-		Message: "Token refreshed!",
+		Success:      true,
+		Message:      "Token refreshed!",
+		AccessToken:  newAccessToken,
+		RefreshToken: newRefreshToken,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
+}
+
+func permissionDenied(w http.ResponseWriter, m string) {
+	utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("permission denied %v", m))
 }

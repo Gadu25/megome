@@ -17,8 +17,8 @@ type Handler struct {
 }
 
 type ExperienceResponse struct {
-	Message    string             `json:"message"`
-	Experience []types.Experience `json:"experience"`
+	Message     string             `json:"message"`
+	Experiences []types.Experience `json:"experiences"`
 }
 
 type SingleExpResponse struct {
@@ -45,27 +45,18 @@ func (h *Handler) handleViewExperiences(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	resp := ExperienceResponse{
-		Message:    "Experience fetched successfully",
-		Experience: experiences,
+		Message:     "Experience fetched successfully",
+		Experiences: experiences,
 	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	endDateStr := r.FormValue("endDate")
-
-	var endDate *string
-	if endDateStr != "" {
-		endDate = &endDateStr
-	}
-
-	payload := types.ExperiencePayload{
-		Title:       r.FormValue("title"),
-		Company:     r.FormValue("company"),
-		StartDate:   r.FormValue("startDate"),
-		EndDate:     endDate,
-		Description: r.FormValue("description"),
+	var payload types.ExperiencePayload
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	// validate the payload
@@ -98,19 +89,10 @@ func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *Handler) handleEditExperience(w http.ResponseWriter, r *http.Request) {
-	endDateStr := r.FormValue("endDate")
-
-	var endDate *string
-	if endDateStr != "" {
-		endDate = &endDateStr
-	}
-
-	payload := types.ExperiencePayload{
-		Title:       r.FormValue("title"),
-		Company:     r.FormValue("company"),
-		StartDate:   r.FormValue("startDate"),
-		EndDate:     endDate,
-		Description: r.FormValue("description"),
+	var payload types.ExperiencePayload
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
 	// validate the payload

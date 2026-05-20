@@ -14,6 +14,7 @@ import (
 	"megome/internal/services/project"
 	projectimages "megome/internal/services/projectImages"
 	projecttech "megome/internal/services/projectTech"
+	publiccertification "megome/internal/services/public/certification"
 	publiceducation "megome/internal/services/public/education"
 	publicexperience "megome/internal/services/public/experience"
 	publicprofile "megome/internal/services/public/profile"
@@ -144,6 +145,9 @@ func (s *APIServer) Run() error {
 
 	publicExperienceHandler := publicexperience.NewHandler(experienceStore, personalAccessTokenStore, apiLogStore)
 	publicExperienceHandler.RegisterRoutes(public)
+
+	publicCertificateHandler := publiccertification.NewHandler(certificationStore, personalAccessTokenStore, apiLogStore)
+	publicCertificateHandler.RegisterRoutes(public)
 
 	// for CORS
 	corsRouter := CORS(router)

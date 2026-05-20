@@ -36,6 +36,33 @@ func (s *Store) GetExperienceById(id int) (types.Experience, error) {
 	return experience, nil
 }
 
+func (s *Store) GetPublicExperiences(userID int) ([]types.Experience, error) {
+	rows, err := s.db.Query(
+		"SELECT id, userId, title, company, startDate, endDate, description, createdAt, updatedAt FROM experiences WHERE userId = ?",
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	experiences := make([]types.Experience, 0)
+
+	for rows.Next() {
+		exp, err := scanRowIntoExperience(rows)
+		if err != nil {
+			return nil, err
+		}
+		experiences = append(experiences, exp)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return experiences, nil
+}
+
 func (s *Store) GetExperiences(userID int) ([]types.Experience, error) {
 	rows, err := s.db.Query(
 		"SELECT id, userId, title, company, startDate, endDate, description, createdAt, updatedAt FROM experiences WHERE userId = ?",

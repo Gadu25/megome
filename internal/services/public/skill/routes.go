@@ -49,7 +49,7 @@ func (h *Handler) handleGetPublicSkill(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := PublicResponse{
-		Message: "profile successfully fetched",
+		Message: "skills successfully fetched",
 		Skills:  skills,
 	}
 

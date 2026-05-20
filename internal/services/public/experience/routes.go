@@ -48,7 +48,7 @@ func (h *Handler) handleGetPublicEducation(w http.ResponseWriter, r *http.Reques
 	}
 
 	resp := PublicResponse{
-		Message:     "education successfully fetched",
+		Message:     "experiences successfully fetched",
 		Experiences: experiences,
 	}
 

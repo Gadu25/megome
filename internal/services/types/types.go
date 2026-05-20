@@ -124,6 +124,7 @@ type ExperiencePayload struct {
 }
 
 type SkillStore interface {
+	GetPublicSkills(userId int) ([]Skill, error)
 	GetSkills(userId int) ([]Skill, error)
 	CreateSkill(Skill) (Skill, error)
 	UpdateSkill(id int, Skill Skill) (Skill, error)

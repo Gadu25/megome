@@ -33,6 +33,33 @@ func (s *Store) GetSkillById(id int) (types.Skill, error) {
 	return skill, nil
 }
 
+func (s *Store) GetPublicSkills(userID int) ([]types.Skill, error) {
+	rows, err := s.db.Query(
+		"SELECT * FROM skills WHERE userId = ?",
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	skills := make([]types.Skill, 0)
+
+	for rows.Next() {
+		skill, err := scanRowIntoSkill(rows)
+		if err != nil {
+			return nil, err
+		}
+		skills = append(skills, skill)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return skills, nil
+}
+
 func (s *Store) GetSkills(userID int) ([]types.Skill, error) {
 	rows, err := s.db.Query(
 		"SELECT * FROM skills WHERE userId = ?",

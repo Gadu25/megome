@@ -49,6 +49,41 @@ func (s *Store) GetProjectById(id int) (types.ProjectFull, error) {
 	}, nil
 }
 
+func (s *Store) GetPublicProjects(userId int) ([]types.ProjectFull, error) {
+	projects, err := s.GetProjects(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	projectIDs := make([]int, 0, len(projects))
+
+	for _, project := range projects {
+		projectIDs = append(projectIDs, project.ID)
+	}
+
+	imagesMap, err := s.GetProjectImages(projectIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	techsMap, err := s.GetProjectTechs(projectIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]types.ProjectFull, 0, len(projects))
+
+	for _, project := range projects {
+		result = append(result, types.ProjectFull{
+			Project:      project,
+			Images:       mapImages(imagesMap[project.ID]),
+			Technologies: techsMap[project.ID],
+		})
+	}
+
+	return result, nil
+}
+
 func (s *Store) GetProjects(userId int) ([]types.Project, error) {
 	rows, err := s.db.Query(`
 		SELECT id, title, description, link, githubLink, status, isDraft, createdAt, updatedAt

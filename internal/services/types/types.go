@@ -227,6 +227,7 @@ type TechnologyPayload struct {
 
 type ProjectStore interface {
 	GetProjectById(int) (ProjectFull, error)
+	GetPublicProjects(int) ([]ProjectFull, error)
 	GetProjects(int) ([]Project, error)
 	GetProjectsFull(int) ([]ProjectFull, error)
 	CreateProject(Project) (ProjectFull, error)

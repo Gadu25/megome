@@ -14,6 +14,7 @@ import (
 	"megome/internal/services/project"
 	projectimages "megome/internal/services/projectImages"
 	projecttech "megome/internal/services/projectTech"
+	publiceducation "megome/internal/services/public/education"
 	publicprofile "megome/internal/services/public/profile"
 	publicskill "megome/internal/services/public/skill"
 	"megome/internal/services/refreshToken"
@@ -132,6 +133,9 @@ func (s *APIServer) Run() error {
 
 	publicSkillHandler := publicskill.NewHandler(skillStore, personalAccessTokenStore, apiLogStore)
 	publicSkillHandler.RegisterRoutes(public)
+
+	publicEducationHandler := publiceducation.NewHandler(educationStore, personalAccessTokenStore, apiLogStore)
+	publicEducationHandler.RegisterRoutes(public)
 
 	// for CORS
 	corsRouter := CORS(router)

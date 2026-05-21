@@ -34,6 +34,28 @@ func (s *Store) GetCertificationById(id int) (types.Certification, error) {
 	return certification, nil
 }
 
+func (s *Store) GetPublicCertifications(userId int) ([]types.Certification, error) {
+	rows, err := s.db.Query(
+		"SELECT id, title, issuer, issueDate, expirationDate, credentialId, credentialUrl FROM certifications WHERE userId = ?",
+		userId,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	certifications := make([]types.Certification, 0)
+
+	for rows.Next() {
+		cert, err := scanRowIntoCertification(rows)
+		if err != nil {
+			return nil, err
+		}
+		certifications = append(certifications, cert)
+	}
+	return certifications, nil
+}
+
 func (s *Store) GetCertifications(userId int) ([]types.Certification, error) {
 	rows, err := s.db.Query(
 		"SELECT id, title, issuer, issueDate, expirationDate, credentialId, credentialUrl FROM certifications WHERE userId = ?",

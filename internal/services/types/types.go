@@ -97,6 +97,7 @@ type MakeProfilePayload struct {
 }
 
 type ExperienceStore interface {
+	GetPublicExperiences(userId int) ([]Experience, error)
 	GetExperiences(userId int) ([]Experience, error)
 	CreateExperience(Experience) (Experience, error)
 	UpdateExperience(id int, Experience Experience) (Experience, error)
@@ -124,6 +125,7 @@ type ExperiencePayload struct {
 }
 
 type SkillStore interface {
+	GetPublicSkills(userId int) ([]Skill, error)
 	GetSkills(userId int) ([]Skill, error)
 	CreateSkill(Skill) (Skill, error)
 	UpdateSkill(id int, Skill Skill) (Skill, error)
@@ -145,6 +147,7 @@ type SkillPayload struct {
 }
 
 type EducationStore interface {
+	GetPublicEducations(userId int) ([]Education, error)
 	GetEducations(userId int) ([]Education, error)
 	CreateEducation(Education) (Education, error)
 	UpdateEducation(id int, education Education) (Education, error)
@@ -172,6 +175,7 @@ type EducationPayload struct {
 }
 
 type CertificationStore interface {
+	GetPublicCertifications(userId int) ([]Certification, error)
 	GetCertifications(userId int) ([]Certification, error)
 	CreateCertification(Certification) (Certification, error)
 	UpdateCertification(id int, certification Certification) (Certification, error)
@@ -224,7 +228,9 @@ type TechnologyPayload struct {
 }
 
 type ProjectStore interface {
+	GetPublicProjectById(int) (ProjectFull, error)
 	GetProjectById(int) (ProjectFull, error)
+	GetPublicProjects(int) ([]ProjectFull, error)
 	GetProjects(int) ([]Project, error)
 	GetProjectsFull(int) ([]ProjectFull, error)
 	CreateProject(Project) (ProjectFull, error)

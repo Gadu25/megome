@@ -19,7 +19,6 @@ type Store struct {
 func NewStore(db *sql.DB, storage *storage.R2Client) *Store {
 	return &Store{db: db, storage: storage}
 }
-
 func (s *Store) GetProjectById(id int) (types.ProjectFull, error) {
 	row := s.db.QueryRow(`
 		SELECT id, title, description, link, githubLink, status, isDraft, createdAt, updatedAt
@@ -47,6 +46,70 @@ func (s *Store) GetProjectById(id int) (types.ProjectFull, error) {
 		Images:       mapImages(imagesMap[id]),
 		Technologies: techsMap[id],
 	}, nil
+}
+
+func (s *Store) GetPublicProjectById(id int) (types.ProjectFull, error) {
+	row := s.db.QueryRow(`
+		SELECT id, title, description, link, githubLink, status, isDraft, createdAt, updatedAt
+		FROM projects
+		WHERE id = ?
+	`, id)
+
+	project, err := scanProject(row)
+	if err != nil {
+		return types.ProjectFull{}, err
+	}
+
+	imagesMap, err := s.GetProjectImages([]int{id})
+	if err != nil {
+		return types.ProjectFull{}, err
+	}
+
+	techsMap, err := s.GetProjectTechs([]int{id})
+	if err != nil {
+		return types.ProjectFull{}, err
+	}
+
+	return types.ProjectFull{
+		Project:      project,
+		Images:       mapImages(imagesMap[id]),
+		Technologies: techsMap[id],
+	}, nil
+}
+
+func (s *Store) GetPublicProjects(userId int) ([]types.ProjectFull, error) {
+	projects, err := s.GetProjects(userId)
+	if err != nil {
+		return nil, err
+	}
+
+	projectIDs := make([]int, 0, len(projects))
+
+	for _, project := range projects {
+		projectIDs = append(projectIDs, project.ID)
+	}
+
+	imagesMap, err := s.GetProjectImages(projectIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	techsMap, err := s.GetProjectTechs(projectIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]types.ProjectFull, 0, len(projects))
+
+	for _, project := range projects {
+		result = append(result, types.ProjectFull{
+			Project:      project,
+			Images:       mapImages(imagesMap[project.ID]),
+			Technologies: techsMap[project.ID],
+		})
+	}
+
+	return result, nil
 }
 
 func (s *Store) GetProjects(userId int) ([]types.Project, error) {

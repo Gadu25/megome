@@ -36,6 +36,28 @@ func (s *Store) GetEducationById(id int) (types.Education, error) {
 	return education, nil
 }
 
+func (s *Store) GetPublicEducations(userID int) ([]types.Education, error) {
+	rows, err := s.db.Query(
+		"SELECT id, school, degree, fieldOfStudy, startDate, endDate from education WHERE userId = ?",
+		userID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	educations := make([]types.Education, 0)
+
+	for rows.Next() {
+		educ, err := scanRowIntoEducation(rows)
+		if err != nil {
+			return nil, err
+		}
+		educations = append(educations, educ)
+	}
+	return educations, nil
+}
+
 func (s *Store) GetEducations(userID int) ([]types.Education, error) {
 	rows, err := s.db.Query(
 		"SELECT id, school, degree, fieldOfStudy, startDate, endDate from education WHERE userId = ?",

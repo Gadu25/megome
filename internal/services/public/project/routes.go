@@ -21,6 +21,11 @@ type PublicResponse struct {
 	Projects []types.ProjectFull `json:"projects"`
 }
 
+type SingleProjResponse struct {
+	Message string            `json:"message"`
+	Project types.ProjectFull `json:"project"`
+}
+
 func NewHandler(projectStore types.ProjectStore, patStore types.PersonalAccessTokenStore, apiLogStore types.APIUsageLogStore) *Handler {
 	return &Handler{
 		projectStore: projectStore,
@@ -32,13 +37,19 @@ func NewHandler(projectStore types.ProjectStore, patStore types.PersonalAccessTo
 func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/project",
 		auth.WithPATAuth(
-			middleware.WithAPILogging(h.handleGetPublicEducation, h.apiLogStore),
+			middleware.WithAPILogging(h.handleGetPublicProjects, h.apiLogStore),
+			h.patStore,
+		),
+	).Methods("GET")
+	router.HandleFunc("/project/{id}",
+		auth.WithPATAuth(
+			middleware.WithAPILogging(h.handleGetPublicProject, h.apiLogStore),
 			h.patStore,
 		),
 	).Methods("GET")
 }
 
-func (h *Handler) handleGetPublicEducation(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleGetPublicProjects(w http.ResponseWriter, r *http.Request) {
 	userID := auth.GetPATUserIDFromContext(r.Context())
 
 	projects, err := h.projectStore.GetPublicProjects(userID)
@@ -52,5 +63,24 @@ func (h *Handler) handleGetPublicEducation(w http.ResponseWriter, r *http.Reques
 		Projects: projects,
 	}
 
+	utils.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) handleGetPublicProject(w http.ResponseWriter, r *http.Request) {
+	id, err := utils.GetRequestId(r)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	project, err := h.projectStore.GetPublicProjectById(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := SingleProjResponse{
+		Message: "Project fetched successfully",
+		Project: project,
+	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }

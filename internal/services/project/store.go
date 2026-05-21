@@ -19,8 +19,36 @@ type Store struct {
 func NewStore(db *sql.DB, storage *storage.R2Client) *Store {
 	return &Store{db: db, storage: storage}
 }
-
 func (s *Store) GetProjectById(id int) (types.ProjectFull, error) {
+	row := s.db.QueryRow(`
+		SELECT id, title, description, link, githubLink, status, isDraft, createdAt, updatedAt
+		FROM projects
+		WHERE id = ?
+	`, id)
+
+	project, err := scanProject(row)
+	if err != nil {
+		return types.ProjectFull{}, err
+	}
+
+	imagesMap, err := s.GetProjectImages([]int{id})
+	if err != nil {
+		return types.ProjectFull{}, err
+	}
+
+	techsMap, err := s.GetProjectTechs([]int{id})
+	if err != nil {
+		return types.ProjectFull{}, err
+	}
+
+	return types.ProjectFull{
+		Project:      project,
+		Images:       mapImages(imagesMap[id]),
+		Technologies: techsMap[id],
+	}, nil
+}
+
+func (s *Store) GetPublicProjectById(id int) (types.ProjectFull, error) {
 	row := s.db.QueryRow(`
 		SELECT id, title, description, link, githubLink, status, isDraft, createdAt, updatedAt
 		FROM projects

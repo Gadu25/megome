@@ -1,8 +1,8 @@
 package publiceducation
 
 import (
+	"megome/internal/platform/http/middleware"
 	"megome/internal/services/auth"
-	"megome/internal/services/middleware"
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 	"net/http"

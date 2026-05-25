@@ -1,9 +1,8 @@
 package publicprofile
 
 import (
-	"fmt"
+	"megome/internal/platform/http/middleware"
 	"megome/internal/services/auth"
-	"megome/internal/services/middleware"
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 	"net/http"
@@ -43,7 +42,7 @@ func (h *Handler) handleGetPublicProfile(w http.ResponseWriter, r *http.Request)
 	userID := auth.GetPATUserIDFromContext(r.Context())
 
 	profile, err := h.profileStore.GetPublicProfile(userID)
-	fmt.Println("[DEBUG] userID", userID)
+
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return

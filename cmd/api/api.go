@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"megome/config"
+	"megome/internal/platform/http/middleware"
 	apilogs "megome/internal/services/apiLogs"
 	"megome/internal/services/certification"
 	"megome/internal/services/education"
@@ -64,6 +65,13 @@ func (s *APIServer) Run() error {
 	router := mux.NewRouter()
 	internal := router.PathPrefix("/api/v1").Subrouter()
 	public := router.PathPrefix("/public/v1").Subrouter()
+
+	// API rate limiter
+	rateLimiter := middleware.NewRateLimiter(2, 5)
+
+	// Apply middleware to route groups
+	internal.Use(rateLimiter.Middleware)
+	public.Use(rateLimiter.Middleware)
 
 	r2Cfg := storage.Config{
 		AccessKey: config.Envs.R2AccessKeyId,

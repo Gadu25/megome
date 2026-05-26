@@ -58,8 +58,6 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 	}
 
-	// utils.SetRefreshTokenCookie(w, rt)
-	// utils.SetAccessTokenCookie(w, at)
 	resp := types.AuthResponse{
 		Success:      true,
 		Message:      "Account was successfully logged in!",

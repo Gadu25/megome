@@ -174,3 +174,16 @@ func GetTokenFromRequest(r *http.Request) string {
 
 	return parts[1]
 }
+
+func ParseIntOrDefault(value string, fallback int) int {
+	if value == "" {
+		return fallback
+	}
+
+	v, err := strconv.Atoi(value)
+	if err != nil {
+		return fallback
+	}
+
+	return v
+}

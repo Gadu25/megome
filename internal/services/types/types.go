@@ -348,8 +348,14 @@ type APIUsageLog struct {
 	CreatedAt      time.Time `json:"createdAt"`
 }
 
+type APIUsageLogWithToken struct {
+	Token PersonalAccessToken `json:"token"`
+	Logs  []APIUsageLog       `json:"logs"`
+}
+
 type APIUsageLogStore interface {
 	Create(log APIUsageLog) error
+	GetByTokenID(tokenId int, limit int, offset int) (APIUsageLogWithToken, error)
 }
 
 type PersonalAccessTokenStore interface {

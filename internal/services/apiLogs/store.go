@@ -39,3 +39,86 @@ func (s *Store) Create(log types.APIUsageLog) error {
 
 	return err
 }
+
+func (s *Store) GetByTokenID(tokenID int, limit int, offset int) (types.APIUsageLogWithToken, error) {
+	rows, err := s.db.Query(`
+		SELECT
+			l.id,
+			l.userId,
+			l.tokenId,
+			l.endpoint,
+			l.method,
+			l.statusCode,
+			l.ipAddress,
+			l.userAgent,
+			l.responseTimeMs,
+			l.createdAt,
+
+			t.id,
+			t.userId,
+			t.name,
+			t.tokenHash,
+			t.lastUsedAt,
+			t.revokedAt,
+			t.createdAt,
+			t.updatedAt
+
+		FROM api_usage_logs l
+		JOIN personal_access_tokens t ON t.id = l.tokenId
+		WHERE l.tokenId = ?
+		ORDER BY l.createdAt DESC
+		LIMIT ? OFFSET ?
+	`, tokenID, limit, offset)
+
+	if err != nil {
+		return types.APIUsageLogWithToken{}, err
+	}
+	defer rows.Close()
+
+	var result types.APIUsageLogWithToken
+	logs := make([]types.APIUsageLog, 0)
+
+	var token types.PersonalAccessToken
+	tokenLoaded := false
+
+	for rows.Next() {
+		var log types.APIUsageLog
+
+		err := rows.Scan(
+			&log.ID,
+			&log.UserID,
+			&log.TokenID,
+			&log.Endpoint,
+			&log.Method,
+			&log.StatusCode,
+			&log.IPAddress,
+			&log.UserAgent,
+			&log.ResponseTimeMs,
+			&log.CreatedAt,
+
+			&token.ID,
+			&token.UserID,
+			&token.Name,
+			&token.TokenHash,
+			&token.LastUsedAt,
+			&token.RevokedAt,
+			&token.CreatedAt,
+			&token.UpdatedAt,
+		)
+
+		if err != nil {
+			return types.APIUsageLogWithToken{}, err
+		}
+
+		logs = append(logs, log)
+
+		if !tokenLoaded {
+			tokenLoaded = true
+		}
+	}
+
+	result.Logs = logs
+	result.Token = token
+
+	return result, nil
+}

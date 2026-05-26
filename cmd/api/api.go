@@ -147,6 +147,10 @@ func (s *APIServer) Run() error {
 	personalAccesstokenHandler := personalaccesstokens.NewHandler(userStore, personalAccessTokenStore)
 	personalAccesstokenHandler.RegisterRoutes(internal)
 
+	apiUsageLog := apilogs.NewStore(s.db)
+	apiUsagLogHandler := apilogs.NewHandler(apiUsageLog, userStore)
+	apiUsagLogHandler.RegisterRoutes(internal)
+
 	// PUBLIC
 	apiLogStore := apilogs.NewStore(s.db)
 

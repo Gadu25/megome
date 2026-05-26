@@ -27,6 +27,7 @@ import (
 	"megome/internal/services/technology"
 	"megome/internal/services/user"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -38,15 +39,25 @@ type APIServer struct {
 
 func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Allow frontend origin
-		w.Header().Set("Access-Control-Allow-Origin", config.Envs.FrontendUrl)
-		w.Header().Set("Access-Control-Allow-Credentials", "true") // important for cookies
+
+		path := r.URL.Path
+
+		// INTERNAL API (strict)
+		if strings.HasPrefix(path, "/api/v1") {
+			w.Header().Set("Access-Control-Allow-Origin", config.Envs.FrontendUrl)
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+		}
+
+		// PUBLIC API (open or developer-friendly)
+		if strings.HasPrefix(path, "/public/v1") {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		}
+
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		// Handle preflight request
 		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
+			w.WriteHeader(http.StatusNoContent)
 			return
 		}
 

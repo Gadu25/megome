@@ -75,6 +75,7 @@ func (h *Handler) handleCreateEducation(w http.ResponseWriter, r *http.Request) 
 		FieldOfStudy: payload.FieldOfStudy,
 		StartDate:    payload.StartDate,
 		EndDate:      payload.EndDate,
+		IsPresent:    payload.IsPresent,
 	})
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
@@ -116,6 +117,7 @@ func (h *Handler) handleEditEducation(w http.ResponseWriter, r *http.Request) {
 		FieldOfStudy: payload.FieldOfStudy,
 		StartDate:    payload.StartDate,
 		EndDate:      payload.EndDate,
+		IsPresent:    payload.IsPresent,
 	})
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)

@@ -111,6 +111,7 @@ type Experience struct {
 	Company     string  `json:"company"`
 	StartDate   string  `json:"startDate"`
 	EndDate     *string `json:"endDate"`
+	IsPresent   bool    `json:"isPresent"`
 	Description string  `json:"description"`
 	CreatedAt   string  `json:"createdAt"`
 	UpdatedAt   string  `json:"updatedAt"`
@@ -121,6 +122,7 @@ type ExperiencePayload struct {
 	Company     string  `json:"company" validate:"required"`
 	StartDate   string  `json:"startDate" validate:"required"`
 	EndDate     *string `json:"endDate"`
+	IsPresent   bool    `json:"isPresent"`
 	Description string  `json:"description"`
 }
 
@@ -155,23 +157,25 @@ type EducationStore interface {
 }
 
 type Education struct {
-	ID           int    `json:"id"`
-	UserID       int    `json:"userId"`
-	School       string `json:"school"`
-	Degree       string `json:"degree"`
-	FieldOfStudy string `json:"fieldOfStudy"`
-	StartDate    string `json:"startDate"`
-	EndDate      string `json:"endDate"`
-	CreatedAt    string `json:"createdAt"`
-	UpdatedAt    string `json:"updatedAt"`
+	ID           int     `json:"id"`
+	UserID       int     `json:"userId"`
+	School       string  `json:"school"`
+	Degree       string  `json:"degree"`
+	FieldOfStudy string  `json:"fieldOfStudy"`
+	StartDate    string  `json:"startDate"`
+	EndDate      *string `json:"endDate"`
+	IsPresent    bool    `json:"isPresent"`
+	CreatedAt    string  `json:"createdAt"`
+	UpdatedAt    string  `json:"updatedAt"`
 }
 
 type EducationPayload struct {
-	School       string `json:"school" validate:"required"`
-	Degree       string `json:"degree"`
-	FieldOfStudy string `json:"fieldOfStudy"`
-	StartDate    string `json:"startDate"`
-	EndDate      string `json:"endDate"`
+	School       string  `json:"school" validate:"required"`
+	Degree       string  `json:"degree"`
+	FieldOfStudy string  `json:"fieldOfStudy"`
+	StartDate    string  `json:"startDate"`
+	EndDate      *string `json:"endDate"`
+	IsPresent    bool    `json:"isPresent"`
 }
 
 type CertificationStore interface {

@@ -160,6 +160,7 @@ type Education struct {
 	ID           int     `json:"id"`
 	UserID       int     `json:"userId"`
 	School       string  `json:"school"`
+	Description  string  `json:"description"`
 	Degree       string  `json:"degree"`
 	FieldOfStudy string  `json:"fieldOfStudy"`
 	StartDate    string  `json:"startDate"`
@@ -171,6 +172,7 @@ type Education struct {
 
 type EducationPayload struct {
 	School       string  `json:"school" validate:"required"`
+	Description  string  `json:"description"`
 	Degree       string  `json:"degree"`
 	FieldOfStudy string  `json:"fieldOfStudy"`
 	StartDate    string  `json:"startDate"`

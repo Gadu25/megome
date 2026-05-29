@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS education (
   userId INT UNSIGNED NOT NULL,
   school VARCHAR(255) NOT NULL,
   degree VARCHAR(255),
+  description TEXT,
   fieldOfStudy VARCHAR(255),
   startDate DATE,
   endDate DATE,

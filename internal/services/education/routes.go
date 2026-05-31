@@ -71,10 +71,12 @@ func (h *Handler) handleCreateEducation(w http.ResponseWriter, r *http.Request) 
 	educ, err := h.educationStore.CreateEducation(types.Education{
 		UserID:       userID,
 		School:       payload.School,
+		Description:  payload.Description,
 		Degree:       payload.Degree,
 		FieldOfStudy: payload.FieldOfStudy,
 		StartDate:    payload.StartDate,
 		EndDate:      payload.EndDate,
+		IsPresent:    payload.IsPresent,
 	})
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
@@ -112,10 +114,12 @@ func (h *Handler) handleEditEducation(w http.ResponseWriter, r *http.Request) {
 
 	educ, err := h.educationStore.UpdateEducation(id, types.Education{
 		School:       payload.School,
+		Description:  payload.Description,
 		Degree:       payload.Degree,
 		FieldOfStudy: payload.FieldOfStudy,
 		StartDate:    payload.StartDate,
 		EndDate:      payload.EndDate,
+		IsPresent:    payload.IsPresent,
 	})
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)

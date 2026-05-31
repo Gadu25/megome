@@ -187,3 +187,10 @@ func ParseIntOrDefault(value string, fallback int) int {
 
 	return v
 }
+
+func NilIfEmpty(s *string) *string {
+	if s == nil || *s == "" {
+		return nil
+	}
+	return s
+}

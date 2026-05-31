@@ -3,6 +3,7 @@ package experience
 import (
 	"database/sql"
 	"megome/internal/services/types"
+	"megome/internal/services/utils"
 )
 
 type Store struct {
@@ -14,7 +15,7 @@ func NewStore(db *sql.DB) *Store {
 }
 
 func (s *Store) GetExperienceById(id int) (types.Experience, error) {
-	row := s.db.QueryRow("SELECT * FROM experiences WHERE id = ?", id)
+	row := s.db.QueryRow("SELECT id, userId, title, company, startDate, endDate, isPresent, description, createdAt, updatedAt FROM experiences WHERE id = ?", id)
 
 	var experience types.Experience
 	err := row.Scan(
@@ -24,6 +25,7 @@ func (s *Store) GetExperienceById(id int) (types.Experience, error) {
 		&experience.Company,
 		&experience.StartDate,
 		&experience.EndDate,
+		&experience.IsPresent,
 		&experience.Description,
 		&experience.CreatedAt,
 		&experience.UpdatedAt,
@@ -38,7 +40,7 @@ func (s *Store) GetExperienceById(id int) (types.Experience, error) {
 
 func (s *Store) GetPublicExperiences(userID int) ([]types.Experience, error) {
 	rows, err := s.db.Query(
-		"SELECT id, userId, title, company, startDate, endDate, description, createdAt, updatedAt FROM experiences WHERE userId = ?",
+		"SELECT id, userId, title, company, startDate, endDate, isPresent, description, createdAt, updatedAt FROM experiences WHERE userId = ?",
 		userID,
 	)
 	if err != nil {
@@ -65,7 +67,7 @@ func (s *Store) GetPublicExperiences(userID int) ([]types.Experience, error) {
 
 func (s *Store) GetExperiences(userID int) ([]types.Experience, error) {
 	rows, err := s.db.Query(
-		"SELECT id, userId, title, company, startDate, endDate, description, createdAt, updatedAt FROM experiences WHERE userId = ?",
+		"SELECT id, userId, title, company, startDate, endDate, isPresent, description, createdAt, updatedAt FROM experiences WHERE userId = ?",
 		userID,
 	)
 	if err != nil {
@@ -91,12 +93,13 @@ func (s *Store) GetExperiences(userID int) ([]types.Experience, error) {
 }
 
 func (s *Store) CreateExperience(experience types.Experience) (types.Experience, error) {
-	result, err := s.db.Exec("INSERT INTO experiences (userId, title, company, startDate, endDate, description) VALUES (?, ?, ?, ?, ?, ?)",
+	result, err := s.db.Exec("INSERT INTO experiences (userId, title, company, startDate, endDate, isPresent, description) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		experience.UserID,
 		experience.Title,
 		experience.Company,
 		experience.StartDate,
-		nilIfEmpty(experience.EndDate),
+		utils.NilIfEmpty(experience.EndDate),
+		experience.IsPresent,
 		experience.Description,
 	)
 	if err != nil {
@@ -113,11 +116,12 @@ func (s *Store) CreateExperience(experience types.Experience) (types.Experience,
 }
 
 func (s *Store) UpdateExperience(id int, experience types.Experience) (types.Experience, error) {
-	_, err := s.db.Exec("UPDATE experiences SET title = ?, company = ?, startDate = ?, endDate = ?, description = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
+	_, err := s.db.Exec("UPDATE experiences SET title = ?, company = ?, startDate = ?, endDate = ?, isPresent = ?, description = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
 		experience.Title,
 		experience.Company,
 		experience.StartDate,
-		experience.EndDate,
+		utils.NilIfEmpty(experience.EndDate),
+		experience.IsPresent,
 		experience.Description,
 		id,
 	)
@@ -152,6 +156,7 @@ func scanRowIntoExperience(rows *sql.Rows) (types.Experience, error) {
 		&experience.Company,
 		&experience.StartDate,
 		&experience.EndDate,
+		&experience.IsPresent,
 		&experience.Description,
 		&experience.CreatedAt,
 		&experience.UpdatedAt,
@@ -161,11 +166,4 @@ func scanRowIntoExperience(rows *sql.Rows) (types.Experience, error) {
 	}
 
 	return experience, nil
-}
-
-func nilIfEmpty(s *string) *string {
-	if s == nil || *s == "" {
-		return nil
-	}
-	return s
 }

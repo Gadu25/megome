@@ -74,6 +74,7 @@ func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request)
 		Company:     payload.Company,
 		StartDate:   payload.StartDate,
 		EndDate:     payload.EndDate,
+		IsPresent:   payload.IsPresent,
 		Description: payload.Description,
 	})
 	if err != nil {
@@ -113,6 +114,7 @@ func (h *Handler) handleEditExperience(w http.ResponseWriter, r *http.Request) {
 		Company:     payload.Company,
 		StartDate:   payload.StartDate,
 		EndDate:     payload.EndDate,
+		IsPresent:   payload.IsPresent,
 		Description: payload.Description,
 	})
 	if err != nil {

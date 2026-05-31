@@ -78,7 +78,7 @@ func (s *APIServer) Run() error {
 	public := router.PathPrefix("/public/v1").Subrouter()
 
 	// API rate limiter
-	rateLimiter := middleware.NewRateLimiter(2, 5)
+	rateLimiter := middleware.NewRateLimiter(4, 10)
 
 	// Apply middleware to route groups
 	internal.Use(rateLimiter.Middleware)

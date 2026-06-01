@@ -74,7 +74,8 @@ func (s *Store) GetUserByID(id int) (*types.User, error) {
 }
 
 func (s *Store) CreateUser(user types.User) (*types.User, error) {
-	result, err := s.db.Exec("INSERT INTO users (email, password) VALUES (?, ?)",
+	result, err := s.db.Exec("INSERT INTO users (username, email, password) VALUES (?, ?, ?)",
+		user.Username,
 		user.Email,
 		user.Password,
 	)

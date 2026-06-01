@@ -95,6 +95,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := h.userStore.CreateUser(types.User{
+		Username: payload.Username,
 		Email:    payload.Email,
 		Password: hashedPassword,
 	})

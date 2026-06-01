@@ -40,6 +40,7 @@ func scanRowIntoUser(rows *sql.Rows) (*types.User, error) {
 
 	err := rows.Scan(
 		&user.ID,
+		&user.Username,
 		&user.Email,
 		&user.Password,
 		&user.CreatedAt,

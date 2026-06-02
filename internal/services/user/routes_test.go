@@ -71,6 +71,10 @@ func (m *mockUserStore) GetUserByEmail(email string) (*types.User, error) {
 	return nil, fmt.Errorf("User not found")
 }
 
+func (m *mockUserStore) GetUserByEmailOrUsername(input string) (*types.User, error) {
+	return nil, fmt.Errorf("User not found")
+}
+
 func (m *mockUserStore) GetUserByID(id int) (*types.User, error) {
 	return nil, nil
 }

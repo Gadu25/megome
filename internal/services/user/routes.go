@@ -42,7 +42,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := h.userStore.GetUserByEmailOrUsername(payload.Email)
+	u, err := h.userStore.GetUserByEmailOrUsername(payload.EmailOrUsername)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Not found, invalid email or password"))
 		return

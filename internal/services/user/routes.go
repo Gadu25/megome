@@ -26,6 +26,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/register", h.handleRegister).Methods("POST")
 	router.HandleFunc("/auth/verify", h.handleVerify).Methods("GET")
 	router.HandleFunc("/auth/logout", h.handleLogout).Methods("POST")
+	router.HandleFunc("/auth/google", h.handleGoogleLogin).Methods("GET")
 }
 
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -170,6 +171,15 @@ func (h *Handler) getTokens(userId int) (string, string, error) {
 		return "", "", err
 	}
 	return accessToken, refreshToken, nil
+}
+
+func (h *Handler) handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
+	// IMPORTANT: in production, generate random state and store in cookie/session
+	state := "random-state"
+
+	url := auth.GoogleOAuthConfig.AuthCodeURL(state)
+
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
 func permissionDenied(w http.ResponseWriter, m string) {

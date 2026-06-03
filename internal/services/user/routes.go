@@ -42,7 +42,7 @@ func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := h.userStore.GetUserByEmail(payload.Email)
+	u, err := h.userStore.GetUserByEmailOrUsername(payload.EmailOrUsername)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Not found, invalid email or password"))
 		return
@@ -95,6 +95,7 @@ func (h *Handler) handleRegister(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := h.userStore.CreateUser(types.User{
+		Username: payload.Username,
 		Email:    payload.Email,
 		Password: hashedPassword,
 	})

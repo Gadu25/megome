@@ -8,13 +8,10 @@ import (
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
 type Claims struct {
@@ -116,16 +113,4 @@ func GetUserIDFromContext(ctx context.Context) int {
 	}
 
 	return userID
-}
-
-var GoogleOAuthConfig = &oauth2.Config{
-	ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-	ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-	RedirectURL:  "http://localhost:8080/auth/google/callback",
-	Scopes: []string{
-		"openid",
-		"email",
-		"profile",
-	},
-	Endpoint: google.Endpoint,
 }

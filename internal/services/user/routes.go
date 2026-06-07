@@ -1,6 +1,7 @@
 package user
 
 import (
+	"encoding/json"
 	"fmt"
 	"megome/config"
 	"megome/internal/services/auth"
@@ -27,6 +28,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/verify", h.handleVerify).Methods("GET")
 	router.HandleFunc("/auth/logout", h.handleLogout).Methods("POST")
 	router.HandleFunc("/auth/google", h.handleGoogleLogin).Methods("GET")
+	router.HandleFunc("/auth/google/callback", h.handleGoogleCallback).Methods("GET")
 }
 
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -177,11 +179,73 @@ func (h *Handler) handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
 	// IMPORTANT: in production, generate random state and store in cookie/session
 	state := "random-state"
 
-	url := auth.GoogleOAuthConfig.AuthCodeURL(state)
+	oauthConfig := auth.NewGoogleOAuthConfig()
+	url := oauthConfig.AuthCodeURL(state)
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
 func permissionDenied(w http.ResponseWriter, m string) {
 	utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("permission denied %v", m))
+}
+
+func (h *Handler) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("CALLBACK HIT")
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("callback reached"))
+
+	state := r.URL.Query().Get("state")
+	code := r.URL.Query().Get("code")
+
+	fmt.Println("STATE:", state)
+	fmt.Println("CODE:", code)
+
+	if state != "random-state" {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid state"))
+		return
+	}
+
+	oauthConfig := auth.NewGoogleOAuthConfig()
+
+	token, err := oauthConfig.Exchange(r.Context(), code)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	fmt.Println("ACCESS TOKEN:", token.AccessToken)
+	fmt.Println("REFRESH TOKEN:", token.RefreshToken)
+	fmt.Println("EXPIRY:", token.Expiry)
+
+	client := oauthConfig.Client(r.Context(), token)
+
+	resp, err := client.Get(
+		"https://www.googleapis.com/oauth2/v2/userinfo",
+	)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer resp.Body.Close()
+
+	var googleUser struct {
+		ID            string `json:"id"`
+		Email         string `json:"email"`
+		VerifiedEmail bool   `json:"verified_email"`
+		Name          string `json:"name"`
+		GivenName     string `json:"given_name"`
+		FamilyName    string `json:"family_name"`
+		Picture       string `json:"picture"`
+		Locale        string `json:"locale"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&googleUser); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	fmt.Printf("GOOGLE USER: %+v\n", googleUser)
+
+	utils.WriteJSON(w, http.StatusOK, googleUser)
 }

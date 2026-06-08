@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS oauth_accounts (
     UNIQUE KEY uq_provider_identity (provider, provider_user_id),
     UNIQUE KEY uq_user_provider (user_id, provider),
 
-    KEY idx_user_id (user_id)
+    KEY idx_user_id (user_id),
 
     CONSTRAINT fk_oauth_user
         FOREIGN KEY (user_id)

@@ -15,8 +15,9 @@ import (
 
 func TestUserServiceHandlers(t *testing.T) {
 	userStore := &mockUserStore{}
+	profileStore := &mockProfileStore{}
 	refreshStore := &mockRefreshStore{}
-	handler := NewHandler(userStore, refreshStore)
+	handler := NewHandler(userStore, profileStore, refreshStore)
 
 	t.Run("should fail if the user payload is invalid", func(t *testing.T) {
 		payload := types.RegisterUserPayload{
@@ -81,6 +82,32 @@ func (m *mockUserStore) GetUserByID(id int) (*types.User, error) {
 
 func (m *mockUserStore) CreateUser(types.User) (*types.User, error) {
 	return nil, nil
+}
+
+func (m *mockUserStore) GetOAuthAccount(string, string) (*types.OAuthAccount, error) {
+	return nil, nil
+}
+
+func (m *mockUserStore) CreateOAuthAccount(types.OAuthAccount) error {
+	return nil
+}
+
+type mockProfileStore struct{}
+
+func (m *mockProfileStore) GetPublicProfile(int) (*types.Profile, error) {
+	return nil, nil
+}
+
+func (m *mockProfileStore) GetProfile(int) (*types.Profile, error) {
+	return nil, nil
+}
+
+func (m *mockProfileStore) MakeProfile(types.Profile) error {
+	return nil
+}
+
+func (m *mockProfileStore) UpsertOAuthProfile(types.Profile) error {
+	return nil
 }
 
 type mockRefreshStore struct{}

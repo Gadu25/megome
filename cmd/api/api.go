@@ -100,11 +100,12 @@ func (s *APIServer) Run() error {
 	refreshHandler := refreshToken.NewHandler(refreshStore)
 	refreshHandler.RegisterRoutes(internal)
 
+	profileStore := profile.NewStore(s.db)
+
 	userStore := user.NewStore(s.db)
-	userHandler := user.NewHandler(userStore, refreshStore)
+	userHandler := user.NewHandler(userStore, profileStore, refreshStore)
 	userHandler.RegisterRoutes(internal)
 
-	profileStore := profile.NewStore(s.db)
 	profileHandler := profile.NewHandler(profileStore, userStore, r2Client)
 	profileHandler.RegisterRoutes(internal)
 

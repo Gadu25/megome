@@ -26,6 +26,8 @@ type UserStore interface {
 	GetUserByEmailOrUsername(input string) (*User, error)
 	GetUserByID(id int) (*User, error)
 	CreateUser(User) (*User, error)
+	GetOAuthAccount(provider string, providerUserID string) (*OAuthAccount, error)
+	CreateOAuthAccount(account OAuthAccount) error
 }
 
 type User struct {
@@ -54,10 +56,32 @@ type AuthResponse struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
+type OAuthAccount struct {
+	ID             int
+	UserID         int
+	Provider       string
+	ProviderUserID string
+	Email          *string
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+}
+
+type GoogleUser struct {
+	ID            string `json:"id"`
+	Email         string `json:"email"`
+	VerifiedEmail bool   `json:"verified_email"`
+	Name          string `json:"name"`
+	GivenName     string `json:"given_name"`
+	FamilyName    string `json:"family_name"`
+	Picture       string `json:"picture"`
+	Locale        string `json:"locale"`
+}
+
 type ProfileStore interface {
 	GetPublicProfile(int) (*Profile, error)
 	GetProfile(userId int) (*Profile, error)
 	MakeProfile(Profile) error
+	UpsertOAuthProfile(Profile) error
 }
 
 type Profile struct {

@@ -1,6 +1,7 @@
 package user
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"megome/config"
@@ -11,15 +12,17 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
+	"golang.org/x/oauth2"
 )
 
 type Handler struct {
 	userStore    types.UserStore
+	profileStore types.ProfileStore
 	refreshStore types.RefreshTokenStore
 }
 
-func NewHandler(userStore types.UserStore, refreshStore types.RefreshTokenStore) *Handler {
-	return &Handler{userStore: userStore, refreshStore: refreshStore}
+func NewHandler(userStore types.UserStore, profileStore types.ProfileStore, refreshStore types.RefreshTokenStore) *Handler {
+	return &Handler{userStore: userStore, profileStore: profileStore, refreshStore: refreshStore}
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
@@ -189,63 +192,212 @@ func permissionDenied(w http.ResponseWriter, m string) {
 	utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("permission denied %v", m))
 }
 
-func (h *Handler) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("CALLBACK HIT")
-
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("callback reached"))
+func (h *Handler) handleGoogleCallback(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 
 	state := r.URL.Query().Get("state")
 	code := r.URL.Query().Get("code")
 
-	fmt.Println("STATE:", state)
-	fmt.Println("CODE:", code)
+	if state == "" || code == "" {
+		utils.WriteError(
+			w,
+			http.StatusBadRequest,
+			fmt.Errorf("missing oauth parameters"),
+		)
+		return
+	}
 
 	if state != "random-state" {
-		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid state"))
+		utils.WriteError(
+			w,
+			http.StatusBadRequest,
+			fmt.Errorf("invalid state"),
+		)
 		return
 	}
 
 	oauthConfig := auth.NewGoogleOAuthConfig()
 
-	token, err := oauthConfig.Exchange(r.Context(), code)
+	token, err := oauthConfig.Exchange(
+		r.Context(),
+		code,
+	)
+
 	if err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
+		utils.WriteError(
+			w,
+			http.StatusBadRequest,
+			err,
+		)
 		return
 	}
 
-	fmt.Println("ACCESS TOKEN:", token.AccessToken)
-	fmt.Println("REFRESH TOKEN:", token.RefreshToken)
-	fmt.Println("EXPIRY:", token.Expiry)
+	googleUser, err := getGoogleUser(
+		r.Context(),
+		oauthConfig,
+		token,
+	)
 
-	client := oauthConfig.Client(r.Context(), token)
+	if err != nil {
+		utils.WriteError(
+			w,
+			http.StatusInternalServerError,
+			err,
+		)
+		return
+	}
+
+	if !googleUser.VerifiedEmail {
+		utils.WriteError(
+			w,
+			http.StatusUnauthorized,
+			fmt.Errorf("email not verified"),
+		)
+		return
+	}
+
+	account, err := h.userStore.GetOAuthAccount(
+		"google",
+		googleUser.ID,
+	)
+
+	var user *types.User
+
+	if err == nil {
+
+		user, err = h.userStore.GetUserByID(
+			account.UserID,
+		)
+
+		if err != nil {
+			utils.WriteError(
+				w,
+				http.StatusInternalServerError,
+				err,
+			)
+			return
+		}
+
+	} else {
+
+		user, err = h.userStore.GetUserByEmail(
+			googleUser.Email,
+		)
+
+		if err != nil {
+
+			user, err = h.userStore.CreateUser(
+				types.User{
+					Username: googleUser.Email,
+					Email:    googleUser.Email,
+					Password: "",
+				},
+			)
+
+			err = h.profileStore.UpsertOAuthProfile(
+				types.Profile{
+					UserID:       user.ID,
+					FirstName:    googleUser.GivenName,
+					LastName:     googleUser.FamilyName,
+					ProfileImage: googleUser.Picture,
+				},
+			)
+
+			if err != nil {
+				utils.WriteError(
+					w,
+					http.StatusInternalServerError,
+					err,
+				)
+				return
+			}
+
+			if err != nil {
+				utils.WriteError(
+					w,
+					http.StatusInternalServerError,
+					err,
+				)
+				return
+			}
+		}
+
+		email := googleUser.Email
+
+		err = h.userStore.CreateOAuthAccount(
+			types.OAuthAccount{
+				UserID:         user.ID,
+				Provider:       "google",
+				ProviderUserID: googleUser.ID,
+				Email:          &email,
+			},
+		)
+
+		if err != nil {
+			utils.WriteError(
+				w,
+				http.StatusInternalServerError,
+				err,
+			)
+			return
+		}
+	}
+
+	accessToken, refreshToken, err := h.getTokens(
+		user.ID,
+	)
+
+	if err != nil {
+		utils.WriteError(
+			w,
+			http.StatusInternalServerError,
+			err,
+		)
+		return
+	}
+
+	resp := types.AuthResponse{
+		Success:      true,
+		Message:      "Login successful",
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}
+
+	utils.WriteJSON(
+		w,
+		http.StatusOK,
+		resp,
+	)
+}
+
+func getGoogleUser(ctx context.Context, oauthConfig *oauth2.Config, token *oauth2.Token,
+) (*types.GoogleUser, error) {
+
+	client := oauthConfig.Client(ctx, token)
 
 	resp, err := client.Get(
 		"https://www.googleapis.com/oauth2/v2/userinfo",
 	)
 	if err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
-		return
+		return nil, err
 	}
+
 	defer resp.Body.Close()
 
-	var googleUser struct {
-		ID            string `json:"id"`
-		Email         string `json:"email"`
-		VerifiedEmail bool   `json:"verified_email"`
-		Name          string `json:"name"`
-		GivenName     string `json:"given_name"`
-		FamilyName    string `json:"family_name"`
-		Picture       string `json:"picture"`
-		Locale        string `json:"locale"`
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf(
+			"google returned status %d",
+			resp.StatusCode,
+		)
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&googleUser); err != nil {
-		utils.WriteError(w, http.StatusInternalServerError, err)
-		return
+	var user types.GoogleUser
+
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return nil, err
 	}
 
-	fmt.Printf("GOOGLE USER: %+v\n", googleUser)
-
-	utils.WriteJSON(w, http.StatusOK, googleUser)
+	return &user, nil
 }

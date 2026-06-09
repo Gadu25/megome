@@ -358,17 +358,18 @@ func (h *Handler) handleGoogleCallback(
 		return
 	}
 
-	resp := types.AuthResponse{
-		Success:      true,
-		Message:      "Login successful",
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}
+	redirectURL := fmt.Sprintf(
+		"%s/auth/google/success?access_token=%s&refresh_token=%s",
+		config.Envs.FrontendUrl,
+		accessToken,
+		refreshToken,
+	)
 
-	utils.WriteJSON(
+	http.Redirect(
 		w,
-		http.StatusOK,
-		resp,
+		r,
+		redirectURL,
+		http.StatusTemporaryRedirect,
 	)
 }
 

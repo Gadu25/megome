@@ -84,11 +84,17 @@ func (s *Store) UpsertOAuthProfile(profile types.Profile) error {
 	query := `
 		INSERT INTO profiles (
 			userId,
+			bio,
 			firstName,
 			lastName,
+			title,
+			birthday,
+			phone,
+			website,
+			location,
 			profileImage
 		)
-		VALUES (?, ?, ?, ?)
+		VALUES (?, "", ?, ?, "", ?, "", "", "", ?)
 		ON DUPLICATE KEY UPDATE
 			firstName = VALUES(firstName),
 			lastName = VALUES(lastName),
@@ -101,6 +107,7 @@ func (s *Store) UpsertOAuthProfile(profile types.Profile) error {
 		profile.UserID,
 		profile.FirstName,
 		profile.LastName,
+		"2026-06-09",
 		profile.ProfileImage,
 	)
 

@@ -115,3 +115,67 @@ func (s *Store) CreateUser(user types.User) (*types.User, error) {
 
 	return &user, nil
 }
+
+func (s *Store) GetOAuthAccount(
+	provider string,
+	providerUserID string,
+) (*types.OAuthAccount, error) {
+
+	row := s.db.QueryRow(`
+		SELECT
+			id,
+			user_id,
+			provider,
+			provider_user_id,
+			email,
+			created_at,
+			updated_at
+		FROM oauth_accounts
+		WHERE provider = ?
+		AND provider_user_id = ?
+	`,
+		provider,
+		providerUserID,
+	)
+
+	var account types.OAuthAccount
+
+	err := row.Scan(
+		&account.ID,
+		&account.UserID,
+		&account.Provider,
+		&account.ProviderUserID,
+		&account.Email,
+		&account.CreatedAt,
+		&account.UpdatedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &account, nil
+}
+
+func (s *Store) CreateOAuthAccount(
+	account types.OAuthAccount,
+) error {
+
+	_, err := s.db.Exec(`
+		INSERT INTO oauth_accounts
+		(
+			user_id,
+			provider,
+			provider_user_id,
+			email
+		)
+		VALUES (?, ?, ?, ?)
+	`,
+		account.UserID,
+		account.Provider,
+		account.ProviderUserID,
+		account.Email,
+	)
+
+	return err
+}

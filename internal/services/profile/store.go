@@ -79,6 +79,34 @@ func (s *Store) MakeProfile(profile types.Profile) error {
 	return nil
 }
 
+func (s *Store) UpsertOAuthProfile(profile types.Profile) error {
+
+	query := `
+		INSERT INTO profiles (
+			userId,
+			firstName,
+			lastName,
+			profileImage
+		)
+		VALUES (?, ?, ?, ?)
+		ON DUPLICATE KEY UPDATE
+			firstName = VALUES(firstName),
+			lastName = VALUES(lastName),
+			profileImage = VALUES(profileImage),
+			updatedAt = CURRENT_TIMESTAMP
+	`
+
+	_, err := s.db.Exec(
+		query,
+		profile.UserID,
+		profile.FirstName,
+		profile.LastName,
+		profile.ProfileImage,
+	)
+
+	return err
+}
+
 func scanRowIntoProfile(row *sql.Row) (*types.Profile, error) {
 	profile := new(types.Profile)
 

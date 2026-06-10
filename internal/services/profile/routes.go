@@ -52,7 +52,7 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		FirstName: r.FormValue("firstName"),
 		LastName:  r.FormValue("lastName"),
 		Title:     r.FormValue("title"),
-		Birthday:  r.FormValue("birthday"),
+		Birthday:  utils.PointerFromString(r.FormValue("birthday")),
 		Phone:     r.FormValue("phone"),
 		Website:   r.FormValue("website"),
 		Location:  r.FormValue("location"),

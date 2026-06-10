@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
+	"strings"
 )
 
 type Store struct {
@@ -84,11 +85,17 @@ func (s *Store) UpsertOAuthProfile(profile types.Profile) error {
 	query := `
 		INSERT INTO profiles (
 			userId,
+			bio,
 			firstName,
 			lastName,
+			title,
+			birthday,
+			phone,
+			website,
+			location,
 			profileImage
 		)
-		VALUES (?, ?, ?, ?)
+		VALUES (?, "", ?, ?, "", ?, "", "", "", ?)
 		ON DUPLICATE KEY UPDATE
 			firstName = VALUES(firstName),
 			lastName = VALUES(lastName),
@@ -101,6 +108,7 @@ func (s *Store) UpsertOAuthProfile(profile types.Profile) error {
 		profile.UserID,
 		profile.FirstName,
 		profile.LastName,
+		nil,
 		profile.ProfileImage,
 	)
 
@@ -131,7 +139,11 @@ func scanRowIntoProfile(row *sql.Row) (*types.Profile, error) {
 	}
 
 	if profile.ProfileImage != "" {
-		profile.ProfileImage = utils.GetPublicFile(profile.ProfileImage)
+		isFullURL := strings.HasPrefix(profile.ProfileImage, "https://") || strings.HasPrefix(profile.ProfileImage, "http://")
+
+		if !isFullURL {
+			profile.ProfileImage = utils.GetPublicFile(profile.ProfileImage)
+		}
 	}
 
 	return profile, nil

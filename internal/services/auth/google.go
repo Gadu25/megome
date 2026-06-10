@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"megome/config"
 
 	"golang.org/x/oauth2"
@@ -11,7 +12,7 @@ func NewGoogleOAuthConfig() *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     config.Envs.GoogleOauthClientId,
 		ClientSecret: config.Envs.GoogleOauthSecret,
-		RedirectURL:  "http://localhost:8080/api/v1/auth/google/callback",
+		RedirectURL:  fmt.Sprintf("%s/api/v1/auth/google/callback", config.Envs.BackendUrl),
 		Scopes: []string{
 			"openid",
 			"email",

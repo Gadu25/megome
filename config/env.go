@@ -23,6 +23,7 @@ type Config struct {
 	R2Bucket               string
 	R2Endpoint             string
 	R2PublicUrl            string
+	BackendUrl             string
 	FrontendUrl            string
 	GoogleOauthClientId    string
 	GoogleOauthSecret      string
@@ -48,6 +49,7 @@ func initConfig() Config {
 		R2Bucket:               getEnv("R2_BUCKET", "megome"),
 		R2Endpoint:             getEnv("R2_ENDPOINT", "4ee86bb26d20c0c74970845960bec979.r2.cloudflarestorage.com"),
 		R2PublicUrl:            getEnv("R2_PUBLIC_URL", "https://pub-8f00a57b78e742a3ac1da0446971e45d.r2.dev"),
+		BackendUrl:             getEnv("BACKEND_URL", "http://localhost:8080"),
 		FrontendUrl:            getEnv("FRONTEND_URL", "http://localhost:3001"),
 		GoogleOauthClientId:    getEnv("GOOGLE_OAUTH_CLIENT_ID", ""),
 		GoogleOauthSecret:      getEnv("GOOGLE_OAUTH_SECRET", ""),

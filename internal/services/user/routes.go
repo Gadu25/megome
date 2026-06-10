@@ -357,7 +357,7 @@ func (h *Handler) handleGoogleCallback(
 		)
 		return
 	}
-
+	fmt.Println("LOG FRONTEND URL: ", config.Envs.FrontendUrl)
 	redirectURL := fmt.Sprintf(
 		"%s/auth/google/success?access_token=%s&refresh_token=%s",
 		config.Envs.FrontendUrl,

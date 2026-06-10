@@ -85,19 +85,19 @@ type ProfileStore interface {
 }
 
 type Profile struct {
-	ID           int    `json:"id"`
-	UserID       int    `json:"userId"`
-	FirstName    string `json:"firstName"`
-	LastName     string `json:"lastName"`
-	Title        string `json:"title"`
-	Birthday     string `json:"birthday"`
-	Bio          string `json:"bio"`
-	Phone        string `json:"phone"`
-	Website      string `json:"website"`
-	Location     string `json:"location"`
-	ProfileImage string `json:"profileImage"`
-	CreatedAt    string `json:"createdAt"`
-	UpdatedAt    string `json:"updatedAt"`
+	ID           int     `json:"id"`
+	UserID       int     `json:"userId"`
+	FirstName    string  `json:"firstName"`
+	LastName     string  `json:"lastName"`
+	Title        string  `json:"title"`
+	Birthday     *string `json:"birthday"`
+	Bio          string  `json:"bio"`
+	Phone        string  `json:"phone"`
+	Website      string  `json:"website"`
+	Location     string  `json:"location"`
+	ProfileImage string  `json:"profileImage"`
+	CreatedAt    string  `json:"createdAt"`
+	UpdatedAt    string  `json:"updatedAt"`
 }
 type PublicProfileResponse struct {
 	ID           int    `json:"id"`
@@ -113,14 +113,14 @@ type PublicProfileResponse struct {
 }
 
 type MakeProfilePayload struct {
-	Bio       string `json:"bio"`
-	FirstName string `json:"firstName"`
-	LastName  string `json:"lastName"`
-	Birthday  string `json:"birthday"`
-	Title     string `json:"title"`
-	Phone     string `json:"phone"`
-	Website   string `json:"website"`
-	Location  string `json:"location"`
+	Bio       string  `json:"bio"`
+	FirstName string  `json:"firstName"`
+	LastName  string  `json:"lastName"`
+	Birthday  *string `json:"birthday"`
+	Title     string  `json:"title"`
+	Phone     string  `json:"phone"`
+	Website   string  `json:"website"`
+	Location  string  `json:"location"`
 }
 
 type ExperienceStore interface {

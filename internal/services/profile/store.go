@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
+	"strings"
 )
 
 type Store struct {
@@ -107,7 +108,7 @@ func (s *Store) UpsertOAuthProfile(profile types.Profile) error {
 		profile.UserID,
 		profile.FirstName,
 		profile.LastName,
-		"2026-06-09",
+		nil,
 		profile.ProfileImage,
 	)
 
@@ -138,7 +139,11 @@ func scanRowIntoProfile(row *sql.Row) (*types.Profile, error) {
 	}
 
 	if profile.ProfileImage != "" {
-		profile.ProfileImage = utils.GetPublicFile(profile.ProfileImage)
+		isFullURL := strings.HasPrefix(profile.ProfileImage, "https://") || strings.HasPrefix(profile.ProfileImage, "http://")
+
+		if !isFullURL {
+			profile.ProfileImage = utils.GetPublicFile(profile.ProfileImage)
+		}
 	}
 
 	return profile, nil

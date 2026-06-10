@@ -194,3 +194,10 @@ func NilIfEmpty(s *string) *string {
 	}
 	return s
 }
+
+func PointerFromString(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
+}

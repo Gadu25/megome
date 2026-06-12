@@ -181,3 +181,19 @@ func scanPATRows(rows *sql.Rows) (types.PersonalAccessToken, error) {
 
 	return pat, err
 }
+
+func (s *Store) GetTokenCountByUserID(userID int) (int, error) {
+	var count int
+
+	err := s.db.QueryRow(`
+		SELECT COUNT(*)
+		FROM personal_access_tokens
+		WHERE userId = ?
+	`, userID).Scan(&count)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
+}

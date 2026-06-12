@@ -19,12 +19,18 @@ type Response struct {
 	Data    types.APIUsageLogWithToken `json:"data"`
 }
 
+type UsageResponse struct {
+	Message string                  `json:"message"`
+	Data    types.UserAPIUsageStats `json:"data"`
+}
+
 func NewHandler(apiUsageLogStore types.APIUsageLogStore, userStore types.UserStore) *Handler {
 	return &Handler{apiUsageLogStore: apiUsageLogStore, userStore: userStore}
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/api-logs/token/{id}", auth.WithJWTAuth(h.handleViewLog, h.userStore)).Methods("GET")
+	router.HandleFunc("/api-logs/usage", auth.WithJWTAuth(h.handleViewUserUsage, h.userStore)).Methods("GET")
 }
 
 func (h *Handler) handleViewLog(w http.ResponseWriter, r *http.Request) {
@@ -59,5 +65,19 @@ func (h *Handler) handleViewLog(w http.ResponseWriter, r *http.Request) {
 		Data:    data,
 	}
 
+	utils.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) handleViewUserUsage(w http.ResponseWriter, r *http.Request) {
+	userID := auth.GetPATTokenIDFromContext(r.Context())
+	stats, err := h.apiUsageLogStore.GetUserUsageStats(userID)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := UsageResponse{
+		Message: "User public api usage",
+		Data:    stats,
+	}
 	utils.WriteJSON(w, http.StatusOK, resp)
 }

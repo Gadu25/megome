@@ -7,6 +7,7 @@ import (
 	"megome/internal/platform/http/middleware"
 	apilogs "megome/internal/services/apiLogs"
 	"megome/internal/services/certification"
+	"megome/internal/services/dashboard"
 	"megome/internal/services/education"
 	"megome/internal/services/experience"
 	"megome/internal/services/initData"
@@ -151,6 +152,9 @@ func (s *APIServer) Run() error {
 	apiUsageLog := apilogs.NewStore(s.db)
 	apiUsagLogHandler := apilogs.NewHandler(apiUsageLog, userStore)
 	apiUsagLogHandler.RegisterRoutes(internal)
+
+	dashboardHandler := dashboard.NewHandler(userStore, personalAccessTokenStore, apiUsageLog)
+	dashboardHandler.RegisterRoutes(internal)
 
 	// PUBLIC
 	apiLogStore := apilogs.NewStore(s.db)

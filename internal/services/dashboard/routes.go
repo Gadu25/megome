@@ -34,7 +34,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 }
 
 func (h *Handler) handleViewDasboardOverview(w http.ResponseWriter, r *http.Request) {
-	userID := auth.GetPATTokenIDFromContext(r.Context())
+	userID := auth.GetUserIDFromContext(r.Context())
 	stats, err := h.apiUsageLogStore.GetUserUsageStats(userID)
 
 	if err != nil {

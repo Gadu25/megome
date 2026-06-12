@@ -26,6 +26,11 @@ type PATResponse struct {
 	PAT     string `json:"pat"`
 }
 
+type PATCountResponse struct {
+	Message      string `json:"mesage"`
+	UserPatCount int    `json:"userPatCount"`
+}
+
 func NewHandler(userStore types.UserStore, patStore types.PersonalAccessTokenStore) *Handler {
 	return &Handler{userStore: userStore, patStore: patStore}
 }
@@ -35,6 +40,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/pat", auth.WithJWTAuth(h.handleCreatePAT, h.userStore)).Methods("POST")
 	router.HandleFunc("/pat/{id}/revoke", auth.WithJWTAuth(h.handleRevokePAT, h.userStore)).Methods("POST")
 	router.HandleFunc("/pat/{id}", auth.WithJWTAuth(h.handleDeletePAT, h.userStore)).Methods("DELETE")
+	router.HandleFunc("/pat/count", auth.WithJWTAuth(h.handleViewUserPATCount, h.userStore)).Methods("GET")
 }
 
 func (h *Handler) handleViewPATs(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +112,6 @@ func (h *Handler) handleRevokePAT(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleDeletePAT(w http.ResponseWriter, r *http.Request) {
-
 	userID := auth.GetUserIDFromContext(r.Context())
 
 	id, err := utils.GetRequestId(r)
@@ -124,4 +129,21 @@ func (h *Handler) handleDeletePAT(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, map[string]string{
 		"message": "token deleted successfully",
 	})
+}
+
+func (h *Handler) handleViewUserPATCount(w http.ResponseWriter, r *http.Request) {
+	userId := auth.GetPATTokenIDFromContext(r.Context())
+	count, err := h.patStore.GetTokenCountByUserID(userId)
+
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	resp := PATCountResponse{
+		Message:      "User personal access token count",
+		UserPatCount: count,
+	}
+
+	utils.WriteJSON(w, http.StatusOK, resp)
 }

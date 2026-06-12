@@ -122,3 +122,66 @@ func (s *Store) GetByTokenID(tokenID int, limit int, offset int) (types.APIUsage
 
 	return result, nil
 }
+
+// func (s *Store) GetRequestCountByUserID(userID int) (int, error) {
+// 	var count int
+
+// 	err := s.db.QueryRow(`
+// 		SELECT COUNT(*)
+// 		FROM api_usage_logs
+// 		WHERE userId = ?
+// 	`, userID).Scan(&count)
+
+// 	if err != nil {
+// 		return 0, err
+// 	}
+
+// 	return count, nil
+// }
+
+// func (s *Store) GetAverageResponseTimeByUserID(userID int) (float64, error) {
+// 	var avg sql.NullFloat64
+
+// 	err := s.db.QueryRow(`
+// 		SELECT AVG(responseTimeMs)
+// 		FROM api_usage_logs
+// 		WHERE userId = ?
+// 	`, userID).Scan(&avg)
+
+// 	if err != nil {
+// 		return 0, err
+// 	}
+
+// 	if !avg.Valid {
+// 		return 0, nil
+// 	}
+
+// 	return avg.Float64, nil
+// }
+
+func (s *Store) GetUserUsageStats(userID int) (types.UserAPIUsageStats, error) {
+	var stats types.UserAPIUsageStats
+
+	var avg sql.NullFloat64
+
+	err := s.db.QueryRow(`
+		SELECT
+			COUNT(*),
+			AVG(responseTimeMs)
+		FROM api_usage_logs
+		WHERE userId = ?
+	`, userID).Scan(
+		&stats.RequestCount,
+		&avg,
+	)
+
+	if err != nil {
+		return types.UserAPIUsageStats{}, err
+	}
+
+	if avg.Valid {
+		stats.AverageResponseMs = avg.Float64
+	}
+
+	return stats, nil
+}

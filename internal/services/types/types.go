@@ -386,9 +386,15 @@ type APIUsageLogWithToken struct {
 	Logs  []APIUsageLog       `json:"logs"`
 }
 
+type UserAPIUsageStats struct {
+	RequestCount      int     `json:"requestCount"`
+	AverageResponseMs float64 `json:"averageResponseMs"`
+}
+
 type APIUsageLogStore interface {
 	Create(log APIUsageLog) error
 	GetByTokenID(tokenId int, limit int, offset int) (APIUsageLogWithToken, error)
+	GetUserUsageStats(userId int) (UserAPIUsageStats, error)
 }
 
 type PersonalAccessTokenStore interface {
@@ -397,4 +403,5 @@ type PersonalAccessTokenStore interface {
 	CreatePAT(int, string) (string, error)
 	RevokePAT(int, int) error
 	DeletePAT(int, int) error
+	GetTokenCountByUserID(int) (int, error)
 }

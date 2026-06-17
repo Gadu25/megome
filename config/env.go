@@ -27,8 +27,13 @@ type Config struct {
 	FrontendUrl            string
 	GoogleOauthClientId    string
 	GoogleOauthSecret      string
+	SmtpHost               string
+	SmtpPort               string
+	SmtpUsername           string
+	SmtpPassword           string
+	SmtpFrom               string
+	SmtpEncryption         string
 }
-
 var Envs Config
 
 func initConfig() Config {
@@ -53,6 +58,12 @@ func initConfig() Config {
 		FrontendUrl:            getEnv("FRONTEND_URL", "http://localhost:3001"),
 		GoogleOauthClientId:    getEnv("GOOGLE_OAUTH_CLIENT_ID", ""),
 		GoogleOauthSecret:      getEnv("GOOGLE_OAUTH_SECRET", ""),
+		SmtpHost:               getEnv("SMTP_HOST", ""),
+		SmtpPort:               getEnv("SMTP_PORT", ""),
+		SmtpUsername:           getEnv("SMTP_USERNAME", ""),
+		SmtpPassword:           getEnv("SMTP_PASSWORD", ""),
+		SmtpFrom:               getEnv("SMTP_FROM", ""),
+		SmtpEncryption:         getEnv("SMTP_ENCRYPTION", ""),
 	}
 }
 

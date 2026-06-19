@@ -49,6 +49,10 @@ type LoginUserPayload struct {
 	Password        string `json:"password" validate:"required"`
 }
 
+type ForgotPassPayload struct {
+	Email	string  `json:"email"`
+}
+
 type AuthResponse struct {
 	Success      bool   `json:"success"`
 	Message      string `json:"message"`

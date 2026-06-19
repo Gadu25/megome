@@ -2,7 +2,6 @@ package mailer
 
 import (
 	"gopkg.in/gomail.v2"
-	"megome/config"
 )
 
 type Config struct {

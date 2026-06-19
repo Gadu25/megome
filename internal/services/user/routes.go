@@ -19,15 +19,16 @@ import (
 )
 
 type Handler struct {
-	userStore    types.UserStore
-	profileStore types.ProfileStore
-	refreshStore types.RefreshTokenStore
-	mailer       *mailer.Mailer
+	userStore        types.UserStore
+	profileStore     types.ProfileStore
+	refreshStore     types.RefreshTokenStore
+	mailer           *mailer.Mailer
+	passwordForgot   types.PasswordForgotStore
 }
 
 
-func NewHandler(userStore types.UserStore, profileStore types.ProfileStore, refreshStore types.RefreshTokenStore, mailer *mailer.Mailer) *Handler {
-	return &Handler{userStore: userStore, profileStore: profileStore, refreshStore: refreshStore, mailer: mailer}
+func NewHandler(userStore types.UserStore, profileStore types.ProfileStore, refreshStore types.RefreshTokenStore, mailer *mailer.Mailer, passwordForgot types.PasswordForgotStore) *Handler {
+	return &Handler{userStore: userStore, profileStore: profileStore, refreshStore: refreshStore, mailer: mailer, passwordForgot: passwordForgot}
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
@@ -37,6 +38,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/logout", h.handleLogout).Methods("POST")
 	router.HandleFunc("/auth/google", h.handleGoogleLogin).Methods("GET")
 	router.HandleFunc("/auth/google/callback", h.handleGoogleCallback).Methods("GET")
+	router.HandleFunc("/auth/forgot-pass", h.handleForgotPassword).Methods("POST")
 }
 
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -431,7 +433,7 @@ func (h *Handler) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	resetToken := uuid.NewString()
 	
 	// save token in database
-	err = h.userStore.SavePasswordResetToken(
+	err = h.passwordForgot.SavePasswordResetToken(
 		user.ID,
 		resetToken,
 		time.Now().Add(15*time.Minute),

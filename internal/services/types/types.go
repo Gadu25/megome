@@ -30,6 +30,10 @@ type UserStore interface {
 	CreateOAuthAccount(account OAuthAccount) error
 }
 
+type PasswordForgotStore interface {
+	SavePasswordResetToken(userId int, token string, exp time.Time) error
+}
+
 type User struct {
 	ID        int       `json:"id"`
 	Username  string    `json:"username"`

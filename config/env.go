@@ -28,7 +28,7 @@ type Config struct {
 	GoogleOauthClientId    string
 	GoogleOauthSecret      string
 	SmtpHost               string
-	SmtpPort               string
+	SmtpPort               int
 	SmtpUsername           string
 	SmtpPassword           string
 	SmtpFrom               string
@@ -46,7 +46,7 @@ func initConfig() Config {
 		DBHost:     getEnv("DB_HOST", "127.0.0.1"),
 		DBName:     getEnv("DB_NAME", "megome"),
 		// JWTExpirationInSeconds: getEnvAsInt("JWT_EXP", 60*5),
-		JWTExpirationInSeconds: getEnvAsInt("JWT_EXP", 60),
+		JWTExpirationInSeconds: getEnvAsInt64("JWT_EXP", 60),
 		JWTSecret:              getEnv("JWT_SECRET", ""),
 		R2AccountId:            getEnv("R2_ACCOUNT_ID", "4ee86bb26d20c0c74970845960bec979"),
 		R2AccessKeyId:          getEnv("R2_ACCESS_KEY_ID", "783e12a9c12ecd2c966fbbac42225c5d"),
@@ -59,7 +59,7 @@ func initConfig() Config {
 		GoogleOauthClientId:    getEnv("GOOGLE_OAUTH_CLIENT_ID", ""),
 		GoogleOauthSecret:      getEnv("GOOGLE_OAUTH_SECRET", ""),
 		SmtpHost:               getEnv("SMTP_HOST", ""),
-		SmtpPort:               getEnv("SMTP_PORT", ""),
+		SmtpPort:               getEnvAsInt("SMTP_PORT", 587),
 		SmtpUsername:           getEnv("SMTP_USERNAME", ""),
 		SmtpPassword:           getEnv("SMTP_PASSWORD", ""),
 		SmtpFrom:               getEnv("SMTP_FROM", ""),
@@ -75,9 +75,20 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-func getEnvAsInt(key string, fallback int64) int64 {
+func getEnvAsInt64(key string, fallback int64) int64 {
 	if value, ok := os.LookupEnv(key); ok {
 		i, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return fallback
+		}
+		return i
+	}
+	return fallback
+}
+
+func getEnvAsInt(key string, fallback int) int {
+	if value, ok := os.LookupEnv(key); ok {
+		i, err := strconv.Atoi(value)
 		if err != nil {
 			return fallback
 		}

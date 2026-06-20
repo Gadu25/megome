@@ -410,6 +410,34 @@ func getGoogleUser(ctx context.Context, oauthConfig *oauth2.Config, token *oauth
 	return &user, nil
 }
 
+func (h *Handler) handleForgotChangePassword(w http.ResponseWriter, r *http.Request) {
+	var payload types.ForgotPassChangePayload
+
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := utils.Validate.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload: %v", errors))
+		return
+	}
+
+	err := h.passwordForgot.ChangePassword(payload.Token, payload.Password)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("Failed: %v", err))
+		return
+	}
+	
+	resp := types.AuthResponse{
+		Success: true,
+		Message: "passsword successfully reset!",
+	}
+
+	utils.WriteJSON(w, http.StatusOK, resp)
+}
+
 func (h *Handler) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var payload types.ForgotPassPayload
 	

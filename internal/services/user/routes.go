@@ -38,7 +38,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/google", h.handleGoogleLogin).Methods("GET")
 	router.HandleFunc("/auth/google/callback", h.handleGoogleCallback).Methods("GET")
 	router.HandleFunc("/auth/forgot-pass", h.handleForgotPassword).Methods("POST")
-	router.HandleFunc("/auth/change-forgot-pass", h.handleForgotChangePassword).Methods("POST")
+	router.HandleFunc("/auth/change-forgot-pass", h.handleResetPassword).Methods("POST")
 }
 
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -408,7 +408,7 @@ func getGoogleUser(ctx context.Context, oauthConfig *oauth2.Config, token *oauth
 	return &user, nil
 }
 
-func (h *Handler) handleForgotChangePassword(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 	var payload types.ForgotPassChangePayload
 
 	if err := utils.ParseJSON(r, &payload); err != nil {

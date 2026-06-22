@@ -64,14 +64,14 @@ func (s *Store) isTokenValid(token string) (int, error) {
 	return userId, nil
 }
 
-func (s *Store) ChangePassword(token string, newPass string) error {
+func (s *Store) ChangePassword(token string, password string) error {
 	userId, err := s.isTokenValid(token)
 	
 	if err != nil {
 		return err
 	}
 
-	hashedPassword, err := auth.HashedPassword(newPass)
+	hashedPassword, err := auth.HashedPassword(password)
 	
 	if err != nil {
 		return err
@@ -86,7 +86,7 @@ func (s *Store) ChangePassword(token string, newPass string) error {
 	// update password
 	_, err = tx.Exec(`
 		UPDATE users
-		SET passwordHash = ?
+		SET password = ?
 		WHERE id = ?
 	`, string(hashedPassword), userId)
 

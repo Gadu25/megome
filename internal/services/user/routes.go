@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
 	"megome/config"
 	"megome/internal/services/auth"
+	"megome/internal/services/mailer"
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 	"net/http"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -16,13 +19,15 @@ import (
 )
 
 type Handler struct {
-	userStore    types.UserStore
-	profileStore types.ProfileStore
-	refreshStore types.RefreshTokenStore
+	userStore      types.UserStore
+	profileStore   types.ProfileStore
+	refreshStore   types.RefreshTokenStore
+	mailer         *mailer.Mailer
+	passwordForgot types.PasswordForgotStore
 }
 
-func NewHandler(userStore types.UserStore, profileStore types.ProfileStore, refreshStore types.RefreshTokenStore) *Handler {
-	return &Handler{userStore: userStore, profileStore: profileStore, refreshStore: refreshStore}
+func NewHandler(userStore types.UserStore, profileStore types.ProfileStore, refreshStore types.RefreshTokenStore, mailer *mailer.Mailer, passwordForgot types.PasswordForgotStore) *Handler {
+	return &Handler{userStore: userStore, profileStore: profileStore, refreshStore: refreshStore, mailer: mailer, passwordForgot: passwordForgot}
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
@@ -32,6 +37,8 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/logout", h.handleLogout).Methods("POST")
 	router.HandleFunc("/auth/google", h.handleGoogleLogin).Methods("GET")
 	router.HandleFunc("/auth/google/callback", h.handleGoogleCallback).Methods("GET")
+	router.HandleFunc("/auth/forgot-pass", h.handleForgotPassword).Methods("POST")
+	router.HandleFunc("/auth/change-forgot-pass", h.handleForgotChangePassword).Methods("POST")
 }
 
 func (h *Handler) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -156,7 +163,6 @@ func (h *Handler) handleVerify(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusUnauthorized, fmt.Errorf("Access token is invalid %v", err))
 		return
 	}
-	fmt.Println("verified!")
 
 	resp := types.AuthResponse{
 		Success: true,
@@ -357,7 +363,6 @@ func (h *Handler) handleGoogleCallback(
 		)
 		return
 	}
-	fmt.Println("LOG FRONTEND URL: ", config.Envs.FrontendUrl)
 	redirectURL := fmt.Sprintf(
 		"%s/auth/google/success?access_token=%s&refresh_token=%s",
 		config.Envs.FrontendUrl,
@@ -401,4 +406,89 @@ func getGoogleUser(ctx context.Context, oauthConfig *oauth2.Config, token *oauth
 	}
 
 	return &user, nil
+}
+
+func (h *Handler) handleForgotChangePassword(w http.ResponseWriter, r *http.Request) {
+	var payload types.ForgotPassChangePayload
+
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := utils.Validate.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload: %v", errors))
+		return
+	}
+
+	err := h.passwordForgot.ChangePassword(payload.Token, payload.Password)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, fmt.Errorf("Failed: %v", err))
+		return
+	}
+
+	resp := types.AuthResponse{
+		Success: true,
+		Message: "passsword successfully reset!",
+	}
+
+	utils.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *Handler) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var payload types.ForgotPassPayload
+
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := utils.Validate.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload: %v", errors))
+		return
+	}
+
+	user, err := h.userStore.GetUserByEmail(payload.Email)
+	if err != nil {
+		utils.WriteError(w, http.StatusNotFound, fmt.Errorf("user not found"))
+		return
+	}
+
+	resetToken := uuid.NewString()
+
+	// save token in database
+	err = h.passwordForgot.SavePasswordResetToken(
+		user.ID,
+		resetToken,
+		time.Now().Add(15*time.Minute),
+	)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	resetURL := fmt.Sprintf(
+		"%s/auth/reset-password?token=%s",
+		config.Envs.FrontendUrl,
+		resetToken,
+	)
+
+	err = h.mailer.Send(mailer.Email{
+		To: []string{payload.Email},
+		Subject: "Reset Your Password",
+		Body: fmt.Sprintf(
+			"Click the following link to reset your password:\n\n%s\n\nThis link expires in 15 minutes.",
+			resetURL,
+		),
+	})
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]string{
+		"message": "password reset email sent",
+	})
 }

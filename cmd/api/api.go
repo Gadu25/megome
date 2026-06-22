@@ -27,6 +27,8 @@ import (
 	"megome/internal/services/storage"
 	"megome/internal/services/technology"
 	"megome/internal/services/user"
+	"megome/internal/services/mailer"
+	"megome/internal/services/passwordForgot"
 	"net/http"
 	"strings"
 
@@ -97,14 +99,23 @@ func (s *APIServer) Run() error {
 		log.Fatalf("failed to initialize R2 client: %v", err)
 	}
 
+	mailer := mailer.New(mailer.Config{
+		Host:     config.Envs.SmtpHost,
+		Port:     config.Envs.SmtpPort,
+		Username: config.Envs.SmtpUsername,
+		Password: config.Envs.SmtpPassword,
+		From:     config.Envs.SmtpFrom,
+	})
+
 	refreshStore := refreshToken.NewStore(s.db)
 	refreshHandler := refreshToken.NewHandler(refreshStore)
 	refreshHandler.RegisterRoutes(internal)
 
 	profileStore := profile.NewStore(s.db)
+	passwordForgotStore := passwordForgot.NewStore(s.db)
 
 	userStore := user.NewStore(s.db)
-	userHandler := user.NewHandler(userStore, profileStore, refreshStore)
+	userHandler := user.NewHandler(userStore, profileStore, refreshStore, mailer, passwordForgotStore)
 	userHandler.RegisterRoutes(internal)
 
 	profileHandler := profile.NewHandler(profileStore, userStore, r2Client)

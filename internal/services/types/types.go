@@ -30,6 +30,11 @@ type UserStore interface {
 	CreateOAuthAccount(account OAuthAccount) error
 }
 
+type PasswordForgotStore interface {
+	SavePasswordResetToken(userId int, token string, exp time.Time) error
+	ChangePassword(token string, newPass string) error
+}
+
 type User struct {
 	ID        int       `json:"id"`
 	Username  string    `json:"username"`
@@ -47,6 +52,15 @@ type RegisterUserPayload struct {
 type LoginUserPayload struct {
 	EmailOrUsername string `json:"emailOrUsername" validate:"required,min=3,max=130"`
 	Password        string `json:"password" validate:"required"`
+}
+
+type ForgotPassChangePayload struct {
+	Token string `json:"token"`
+	Password string `json:"password"`
+}
+
+type ForgotPassPayload struct {
+	Email	string  `json:"email"`
 }
 
 type AuthResponse struct {

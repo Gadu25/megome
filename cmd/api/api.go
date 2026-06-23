@@ -99,13 +99,16 @@ func (s *APIServer) Run() error {
 		log.Fatalf("failed to initialize R2 client: %v", err)
 	}
 
-	mailer := mailer.New(mailer.Config{
+	smtpClient := mailer.New(mailer.Config{
 		Host:     config.Envs.SmtpHost,
 		Port:     config.Envs.SmtpPort,
 		Username: config.Envs.SmtpUsername,
 		Password: config.Envs.SmtpPassword,
 		From:     config.Envs.SmtpFrom,
 	})
+
+	renderer, err := mailer.NewRenderer("internal/services/mailer/templates/*.html")
+	emailService := mailer.NewService(smtpClient, renderer)
 
 	refreshStore := refreshToken.NewStore(s.db)
 	refreshHandler := refreshToken.NewHandler(refreshStore)
@@ -115,7 +118,7 @@ func (s *APIServer) Run() error {
 	passwordForgotStore := passwordForgot.NewStore(s.db)
 
 	userStore := user.NewStore(s.db)
-	userHandler := user.NewHandler(userStore, profileStore, refreshStore, mailer, passwordForgotStore)
+	userHandler := user.NewHandler(userStore, profileStore, refreshStore, emailService, passwordForgotStore)
 	userHandler.RegisterRoutes(internal)
 
 	profileHandler := profile.NewHandler(profileStore, userStore, r2Client)

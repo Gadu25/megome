@@ -1,27 +1,30 @@
-type ResetPasswordEmailData struct {
-	ResetURL string
+package mailer
+
+import (
+	"bytes"
+	"html/template"
+)
+
+type Renderer struct {
+	tmpl *template.Template
 }
 
-func (h *Handler) sendResetEmail(to string, resetURL string) error {
-	tmpl, err := template.ParseFiles(
-		"templates/base.html",
-		"templates/reset_password.html",
-	)
+func NewRenderer(pattern string) (*Renderer, error) {
+	t, err := template.ParseGlob(pattern)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	var body bytes.Buffer
-	err = tmpl.Execute(&body, ResetPasswordEmailData{
-		ResetURL: resetURL,
-	})
+	return &Renderer{tmpl: t}, nil
+}
+
+func (r *Renderer) Render(name string, data any) (string, error) {
+	var buf bytes.Buffer
+
+	err := r.tmpl.ExecuteTemplate(&buf, name, data)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return h.mailer.Send(mailer.Email{
-		To:      []string{to},
-		Subject: "Reset Your Password",
-		Body:    body.String(),
-	})
+	return buf.String(), nil
 }

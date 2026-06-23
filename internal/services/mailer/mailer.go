@@ -1,8 +1,6 @@
 package mailer
 
-import (
-	"gopkg.in/gomail.v2"
-)
+import "gopkg.in/gomail.v2"
 
 type Config struct {
 	Host     string
@@ -30,9 +28,10 @@ func New(cfg Config) *Mailer {
 }
 
 type Email struct {
-	To      []string
-	Subject string
-	Body    string
+	To          []string
+	Subject     string
+	Body        string
+	ContentType string
 }
 
 func (m *Mailer) Send(e Email) error {
@@ -41,7 +40,13 @@ func (m *Mailer) Send(e Email) error {
 	msg.SetHeader("From", m.from)
 	msg.SetHeader("To", e.To...)
 	msg.SetHeader("Subject", e.Subject)
-	msg.SetBody("text/plain", e.Body)
+
+	contentType := e.ContentType
+	if contentType == "" {
+		contentType = "text/plain"
+	}
+
+	msg.SetBody(contentType, e.Body)
 
 	return m.dialer.DialAndSend(msg)
 }

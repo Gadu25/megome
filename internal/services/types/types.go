@@ -105,6 +105,7 @@ type Profile struct {
 	LastName     string  `json:"lastName"`
 	Title        string  `json:"title"`
 	Birthday     *string `json:"birthday"`
+	Tagline      string  `json:"tagline"`
 	Bio          string  `json:"bio"`
 	Phone        string  `json:"phone"`
 	Website      string  `json:"website"`
@@ -130,6 +131,7 @@ type MakeProfilePayload struct {
 	Bio       string  `json:"bio"`
 	FirstName string  `json:"firstName"`
 	LastName  string  `json:"lastName"`
+	Tagline   string  `json:"tagline"`
 	Birthday  *string `json:"birthday"`
 	Title     string  `json:"title"`
 	Phone     string  `json:"phone"`

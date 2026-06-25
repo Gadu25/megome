@@ -16,20 +16,21 @@ func NewStore(db *sql.DB) *Store {
 }
 
 func (s *Store) GetPublicProfile(userId int) (*types.Profile, error) {
-	row := s.db.QueryRow("SELECT * FROM profiles WHERE userId = ? LIMIT 1", userId)
+	row := s.db.QueryRow("SELECT id, userId, tagline, bio, firstname, lastname, title, birthday, phone, website, location, profileImage, createdAt, updatedAt profiles WHERE userId = ? LIMIT 1", userId)
 	return scanRowIntoProfile(row)
 }
 
 func (s *Store) GetProfile(userId int) (*types.Profile, error) {
-	row := s.db.QueryRow("SELECT * FROM profiles WHERE userId = ? LIMIT 1", userId)
+	row := s.db.QueryRow("SELECT id, userId, tagline, bio, firstname, lastname, title, birthday, phone, website, location, profileImage, createdAt, updatedAt FROM profiles WHERE userId = ? LIMIT 1", userId)
 	return scanRowIntoProfile(row)
 }
 
 func (s *Store) MakeProfile(profile types.Profile) error {
 	existing, err := s.GetProfile(profile.UserID)
 	if err != nil {
-		_, err = s.db.Exec("INSERT INTO profiles (userId, bio, firstName, lastName, title, birthday, phone, website, location, profileImage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+		_, err = s.db.Exec("INSERT INTO profiles (userId, tagline, bio, firstName, lastName, title, birthday, phone, website, location, profileImage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 			profile.UserID,
+			profile.Tagline,
 			profile.Bio,
 			profile.FirstName,
 			profile.LastName,
@@ -48,10 +49,11 @@ func (s *Store) MakeProfile(profile types.Profile) error {
 	if existing != nil {
 		query := `
 			UPDATE profiles 
-			SET bio = ?, firstName = ?, lastName = ?, title = ?, birthday = ?, phone = ?, website = ?, location = ?, updatedAt = CURRENT_TIMESTAMP
+			SET tagline = ?, bio = ?, firstName = ?, lastName = ?, title = ?, birthday = ?, phone = ?, website = ?, location = ?, updatedAt = CURRENT_TIMESTAMP
 		`
 
 		args := []any{
+			profile.Tagline,
 			profile.Bio,
 			profile.FirstName,
 			profile.LastName,
@@ -85,6 +87,7 @@ func (s *Store) UpsertOAuthProfile(profile types.Profile) error {
 	query := `
 		INSERT INTO profiles (
 			userId,
+			tagline,
 			bio,
 			firstName,
 			lastName,
@@ -95,7 +98,7 @@ func (s *Store) UpsertOAuthProfile(profile types.Profile) error {
 			location,
 			profileImage
 		)
-		VALUES (?, "", ?, ?, "", ?, "", "", "", ?)
+		VALUES (?, ?, "", ?, ?, "", ?, "", "", "", ?)
 		ON DUPLICATE KEY UPDATE
 			firstName = VALUES(firstName),
 			lastName = VALUES(lastName),
@@ -106,6 +109,7 @@ func (s *Store) UpsertOAuthProfile(profile types.Profile) error {
 	_, err := s.db.Exec(
 		query,
 		profile.UserID,
+		profile.Tagline,
 		profile.FirstName,
 		profile.LastName,
 		nil,
@@ -121,6 +125,7 @@ func scanRowIntoProfile(row *sql.Row) (*types.Profile, error) {
 	err := row.Scan(
 		&profile.ID,
 		&profile.UserID,
+		&profile.Tagline,
 		&profile.Bio,
 		&profile.FirstName,
 		&profile.LastName,

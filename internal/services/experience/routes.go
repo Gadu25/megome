@@ -3,9 +3,12 @@ package experience
 import (
 	"fmt"
 	"megome/internal/services/auth"
+	"megome/internal/services/storage"
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 	"net/http"
+
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -53,10 +56,18 @@ func (h *Handler) handleViewExperiences(w http.ResponseWriter, r *http.Request) 
 
 func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request) {
 	// get JSON payload
-	var payload types.ExperiencePayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	isPresent, err := strconv.ParseBool(r.FormValue("isPresent"))
+	if err != nil {
+		isPresent = false
+	}
+
+	payload := types.ExperiencePayload{
+		Title: r.FormValue("title"),
+		Company: r.FormValue("company"),
+		StartDate: r.FormValue("startDate"),
+		EndDate: utils.PointerFromString(r.FormValue("endDate")),
+		IsPresent: isPresent,
+		Description: r.FormValue("description"),
 	}
 
 	// validate the payload
@@ -65,9 +76,46 @@ func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request)
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload %v", errors))
 		return
 	}
+	
+	userID := auth.GetUserIDFromContext(r.Context())
+
+	// image logic
+	// var logoKey string
+
+	// file, handler, _ := r.FormFile("logo")
+	// if file != nil {
+	// 	// size limit (1MB)
+	// 	if handler.Size > 1<<20 {
+	// 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("file too large (max 1MB)"))
+	// 		return
+	// 	}
+	// 	buffer := make([]byte, 512)
+	// 	_, err = file.Read(buffer)
+	// 	if err != nil {
+	// 		utils.WriteError(w, http.StatusBadRequest, err)
+	// 		return
+	// 	}
+	//
+	// 	fileType := http.DetectContentType(buffer)
+	// 	if fileType != "image/jpeg" && fileType != "image/png" && fileType != "image/webp" {
+	// 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid file type"))
+	// 		return
+	// 	}
+	//
+	// 	key, err := storage.GenerateKey(
+	// 		fmt.Sprintf("experience/%d/logo", userID),
+	// 		utils.GenerateUUID(),
+	// 		fileType,
+	// 	)
+	// 	if err != nil {
+	// 		utils.WriteError(w, http.StatusBadRequest, err)
+	// 		return
+	// 	}
+	//
+	// }
+	// defer file.Close()
 
 	// create experience
-	userID := auth.GetUserIDFromContext(r.Context())
 	exp, err := h.experienceStore.CreateExperience(types.Experience{
 		UserID:      userID,
 		Title:       payload.Title,

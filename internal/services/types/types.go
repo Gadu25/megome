@@ -152,6 +152,7 @@ type Experience struct {
 	UserID      int     `json:"userId"`
 	Title       string  `json:"title"`
 	Company     string  `json:"company"`
+	Logo        string  `json:"logo"`
 	StartDate   string  `json:"startDate"`
 	EndDate     *string `json:"endDate"`
 	IsPresent   bool    `json:"isPresent"`
@@ -163,6 +164,7 @@ type Experience struct {
 type ExperiencePayload struct {
 	Title       string  `json:"title" validate:"required"`
 	Company     string  `json:"company" validate:"required"`
+	Logo        string  `json:"logo"`
 	StartDate   string  `json:"startDate" validate:"required"`
 	EndDate     *string `json:"endDate"`
 	IsPresent   bool    `json:"isPresent"`

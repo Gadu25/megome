@@ -142,6 +142,7 @@ type MakeProfilePayload struct {
 type ExperienceStore interface {
 	GetPublicExperiences(userId int) ([]Experience, error)
 	GetExperiences(userId int) ([]Experience, error)
+	GetExperienceById(id int) (Experience, error)
 	CreateExperience(Experience) (Experience, error)
 	UpdateExperience(id int, Experience Experience) (Experience, error)
 	DeleteExperience(id int) (Experience, error)

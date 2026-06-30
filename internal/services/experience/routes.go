@@ -56,6 +56,55 @@ func (h *Handler) handleViewExperiences(w http.ResponseWriter, r *http.Request) 
 	utils.WriteJSON(w, http.StatusOK, resp)
 }
 
+func (h *Handler) uploadLogo(r *http.Request) (*string, error) {
+	file, handler, err := r.FormFile("logo")
+	if err != nil {
+		return nil, nil
+	}
+	defer file.Close()
+
+	if handler.Size > 1<<20 {
+		return nil, fmt.Errorf("file too large (max 1MB)")
+	}
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	sniffLen := 512
+	if len(data) < sniffLen {
+		sniffLen = len(data)
+	}
+
+	fileType := http.DetectContentType(data[:sniffLen])
+	if fileType != "image/jpeg" && fileType != "image/png" && fileType != "image/webp" {
+		return nil, fmt.Errorf("invalid file type")
+	}
+
+	key, err := storage.GenerateKey(
+		fmt.Sprintf("experience/%d/logo", auth.GetUserIDFromContext(r.Context())),
+		utils.GenerateUUID(),
+		fileType,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	err = h.r2Client.UploadFromReader(
+		r.Context(),
+		key,
+		bytes.NewReader(data),
+		int64(len(data)),
+		handler.Header.Get("Content-Type"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &key, nil
+}
+
 func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request) {
 	isPresent, err := strconv.ParseBool(r.FormValue("isPresent"))
 	if err != nil {
@@ -73,56 +122,10 @@ func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request)
 
 	userID := auth.GetUserIDFromContext(r.Context())
 
-	logoKey := payload.Logo
-
-	file, handler, _ := r.FormFile("logo")
-	if file != nil {
-		defer file.Close()
-
-		if handler.Size > 1<<20 {
-			utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("file too large (max 1MB)"))
-			return
-		}
-
-		data, err := io.ReadAll(file)
-		if err != nil {
-			utils.WriteError(w, http.StatusInternalServerError, err)
-		}
-
-		sniffLen := 512
-		if len(data) < sniffLen {
-			sniffLen = len(data)
-		}
-
-		fileType := http.DetectContentType(data[:sniffLen])
-		if fileType != "image/jpeg" && fileType != "image/png" && fileType != "image/webp" {
-		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid file type"))
+	logoKey, err := h.uploadLogo(r)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
-		}
-
-		key, err := storage.GenerateKey(
-			fmt.Sprintf("experience/%d/logo", userID),
-			utils.GenerateUUID(),
-			fileType,
-		)
-		if err != nil {
-			utils.WriteError(w, http.StatusBadRequest, err)
-			return
-		}
-
-		err = h.r2Client.UploadFromReader(
-			r.Context(),
-			key,
-			bytes.NewReader(data),
-			int64(len(data)),
-			handler.Header.Get("Content-Type"),
-		)
-		if err != nil {
-			utils.WriteError(w, http.StatusInternalServerError, err)
-			return
-		}
-
-		logoKey = &key
 	}
 
 	exp, err := h.experienceStore.CreateExperience(types.Experience{
@@ -148,28 +151,52 @@ func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *Handler) handleEditExperience(w http.ResponseWriter, r *http.Request) {
-	var payload types.ExperiencePayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	isPresent, err := strconv.ParseBool(r.FormValue("isPresent"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Error handling payload: %w", err))
 	}
 
-	// validate the payload
+	payload := types.ExperiencePayload{
+		Title:       r.FormValue("title"),
+		Company:     r.FormValue("company"),
+		StartDate:   r.FormValue("startDate"),
+		EndDate:     utils.PointerFromString(r.FormValue("endDate")),
+		IsPresent:   isPresent,
+		Description: r.FormValue("description"),
+	}
+
 	if err := utils.Validate.Struct(payload); err != nil {
 		errors := err.(validator.ValidationErrors)
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload %v", errors))
 		return
 	}
 
-	// update experience
 	id, err := utils.GetRequestId(r)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
+
+	existing, err := h.experienceStore.GetExperienceById(id)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	logoKey, err := h.uploadLogo(r)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if logoKey != nil && existing.Logo != nil {
+		_ = h.r2Client.DeleteObject(r.Context(), *existing.Logo)
+	}
+
 	exp, err := h.experienceStore.UpdateExperience(id, types.Experience{
 		Title:       payload.Title,
 		Company:     payload.Company,
+		Logo:        logoKey,
 		StartDate:   payload.StartDate,
 		EndDate:     payload.EndDate,
 		IsPresent:   payload.IsPresent,

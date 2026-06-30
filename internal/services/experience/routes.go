@@ -1,12 +1,15 @@
 package experience
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"megome/internal/services/auth"
 	"megome/internal/services/storage"
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 	"net/http"
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -54,16 +57,18 @@ func (h *Handler) handleViewExperiences(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request) {
-	var payload types.ExperiencePayload
-	if err := utils.ParseJSON(r, &payload); err != nil {
-		utils.WriteError(w, http.StatusBadRequest, err)
-		return
+	isPresent, err := strconv.ParseBool(r.FormValue("isPresent"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("Error handling payload: %w", err))
 	}
 
-	if err := utils.Validate.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload %v", errors))
-		return
+	payload := types.ExperiencePayload{
+		Title: r.FormValue("title"),
+		Company: r.FormValue("company"),
+		StartDate: r.FormValue("startDate"),
+		EndDate: utils.PointerFromString(r.FormValue("endDate")),
+		IsPresent: isPresent,
+		Description: r.FormValue("description"),
 	}
 
 	userID := auth.GetUserIDFromContext(r.Context())
@@ -78,17 +83,21 @@ func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request)
 			utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("file too large (max 1MB)"))
 			return
 		}
-		buffer := make([]byte, 512)
-		_, err := file.Read(buffer)
+
+		data, err := io.ReadAll(file)
 		if err != nil {
-			utils.WriteError(w, http.StatusBadRequest, err)
-			return
+			utils.WriteError(w, http.StatusInternalServerError, err)
 		}
 
-		fileType := http.DetectContentType(buffer)
+		sniffLen := 512
+		if len(data) < sniffLen {
+			sniffLen = len(data)
+		}
+
+		fileType := http.DetectContentType(data[:sniffLen])
 		if fileType != "image/jpeg" && fileType != "image/png" && fileType != "image/webp" {
-			utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid file type"))
-			return
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid file type"))
+		return
 		}
 
 		key, err := storage.GenerateKey(
@@ -104,8 +113,8 @@ func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request)
 		err = h.r2Client.UploadFromReader(
 			r.Context(),
 			key,
-			file,
-			handler.Size,
+			bytes.NewReader(data),
+			int64(len(data)),
 			handler.Header.Get("Content-Type"),
 		)
 		if err != nil {

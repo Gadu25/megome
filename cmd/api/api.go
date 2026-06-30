@@ -128,7 +128,7 @@ func (s *APIServer) Run() error {
 	initHandler.RegisterRoutes(internal)
 
 	experienceStore := experience.NewStore(s.db)
-	experienceHandler := experience.NewHandler(experienceStore, userStore)
+	experienceHandler := experience.NewHandler(experienceStore, userStore, r2Client)
 	experienceHandler.RegisterRoutes(internal)
 
 	skillStore := skill.NewStore(s.db)

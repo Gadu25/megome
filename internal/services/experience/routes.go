@@ -8,8 +8,6 @@ import (
 	"megome/internal/services/utils"
 	"net/http"
 
-	"strconv"
-
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 )
@@ -17,6 +15,7 @@ import (
 type Handler struct {
 	experienceStore types.ExperienceStore
 	userStore       types.UserStore
+	r2Client   *storage.R2Client
 }
 
 type ExperienceResponse struct {
@@ -29,8 +28,8 @@ type SingleExpResponse struct {
 	Experience types.Experience `json:"experience"`
 }
 
-func NewHandler(experienceStore types.ExperienceStore, userStore types.UserStore) *Handler {
-	return &Handler{experienceStore: experienceStore, userStore: userStore}
+func NewHandler(experienceStore types.ExperienceStore, userStore types.UserStore, r2Client *storage.R2Client) *Handler {
+	return &Handler{experienceStore: experienceStore, userStore: userStore, r2Client: r2Client}
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
@@ -55,71 +54,73 @@ func (h *Handler) handleViewExperiences(w http.ResponseWriter, r *http.Request) 
 }
 
 func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request) {
-	// get JSON payload
-	isPresent, err := strconv.ParseBool(r.FormValue("isPresent"))
-	if err != nil {
-		isPresent = false
+	var payload types.ExperiencePayload
+	if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
 	}
 
-	payload := types.ExperiencePayload{
-		Title: r.FormValue("title"),
-		Company: r.FormValue("company"),
-		StartDate: r.FormValue("startDate"),
-		EndDate: utils.PointerFromString(r.FormValue("endDate")),
-		IsPresent: isPresent,
-		Description: r.FormValue("description"),
-	}
-
-	// validate the payload
 	if err := utils.Validate.Struct(payload); err != nil {
 		errors := err.(validator.ValidationErrors)
 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload %v", errors))
 		return
 	}
-	
+
 	userID := auth.GetUserIDFromContext(r.Context())
 
-	// image logic
-	// var logoKey string
+	logoKey := payload.Logo
 
-	// file, handler, _ := r.FormFile("logo")
-	// if file != nil {
-	// 	// size limit (1MB)
-	// 	if handler.Size > 1<<20 {
-	// 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("file too large (max 1MB)"))
-	// 		return
-	// 	}
-	// 	buffer := make([]byte, 512)
-	// 	_, err = file.Read(buffer)
-	// 	if err != nil {
-	// 		utils.WriteError(w, http.StatusBadRequest, err)
-	// 		return
-	// 	}
-	//
-	// 	fileType := http.DetectContentType(buffer)
-	// 	if fileType != "image/jpeg" && fileType != "image/png" && fileType != "image/webp" {
-	// 		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid file type"))
-	// 		return
-	// 	}
-	//
-	// 	key, err := storage.GenerateKey(
-	// 		fmt.Sprintf("experience/%d/logo", userID),
-	// 		utils.GenerateUUID(),
-	// 		fileType,
-	// 	)
-	// 	if err != nil {
-	// 		utils.WriteError(w, http.StatusBadRequest, err)
-	// 		return
-	// 	}
-	//
-	// }
-	// defer file.Close()
+	file, handler, _ := r.FormFile("logo")
+	if file != nil {
+		defer file.Close()
 
-	// create experience
+		if handler.Size > 1<<20 {
+			utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("file too large (max 1MB)"))
+			return
+		}
+		buffer := make([]byte, 512)
+		_, err := file.Read(buffer)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, err)
+			return
+		}
+
+		fileType := http.DetectContentType(buffer)
+		if fileType != "image/jpeg" && fileType != "image/png" && fileType != "image/webp" {
+			utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid file type"))
+			return
+		}
+
+		key, err := storage.GenerateKey(
+			fmt.Sprintf("experience/%d/logo", userID),
+			utils.GenerateUUID(),
+			fileType,
+		)
+		if err != nil {
+			utils.WriteError(w, http.StatusBadRequest, err)
+			return
+		}
+
+		err = h.r2Client.UploadFromReader(
+			r.Context(),
+			key,
+			file,
+			handler.Size,
+			handler.Header.Get("Content-Type"),
+		)
+		if err != nil {
+			utils.WriteError(w, http.StatusInternalServerError, err)
+			return
+		}
+
+		logoKey = &key
+	}
+
 	exp, err := h.experienceStore.CreateExperience(types.Experience{
 		UserID:      userID,
 		Title:       payload.Title,
 		Company:     payload.Company,
+		Logo:        logoKey,
 		StartDate:   payload.StartDate,
 		EndDate:     payload.EndDate,
 		IsPresent:   payload.IsPresent,

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
+	"strings"
 )
 
 type Store struct {
@@ -167,6 +168,14 @@ func scanRowIntoExperience(rows *sql.Rows) (types.Experience, error) {
 	)
 	if err != nil {
 		return types.Experience{}, err
+	}
+
+	if experience.Logo != nil && *experience.Logo != "" {
+		isFullURL := strings.HasPrefix(*experience.Logo, "https://") || strings.HasPrefix(*experience.Logo, "http://")
+
+		if !isFullURL {
+			*experience.Logo = utils.GetPublicFile(*experience.Logo)
+		}
 	}
 
 	return experience, nil

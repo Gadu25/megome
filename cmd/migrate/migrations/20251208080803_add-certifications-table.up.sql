@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS certifications (
   title VARCHAR(255) NOT NULL,
   issuer VARCHAR(255),
   issueDate DATE,
+  certificateImage VARCHAR(255),
   expirationDate DATE,
   credentialId VARCHAR(255),
   credentialUrl VARCHAR(255),

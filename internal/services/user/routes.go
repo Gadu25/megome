@@ -22,12 +22,12 @@ type Handler struct {
 	userStore      types.UserStore
 	profileStore   types.ProfileStore
 	refreshStore   types.RefreshTokenStore
-	mailer         *mailer.Mailer
+	emailService   *mailer.Service
 	passwordForgot types.PasswordForgotStore
 }
 
-func NewHandler(userStore types.UserStore, profileStore types.ProfileStore, refreshStore types.RefreshTokenStore, mailer *mailer.Mailer, passwordForgot types.PasswordForgotStore) *Handler {
-	return &Handler{userStore: userStore, profileStore: profileStore, refreshStore: refreshStore, mailer: mailer, passwordForgot: passwordForgot}
+func NewHandler(userStore types.UserStore, profileStore types.ProfileStore, refreshStore types.RefreshTokenStore, emailService *mailer.Service, passwordForgot types.PasswordForgotStore) *Handler {
+	return &Handler{userStore: userStore, profileStore: profileStore, refreshStore: refreshStore, emailService: emailService, passwordForgot: passwordForgot}
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
@@ -474,15 +474,8 @@ func (h *Handler) handleForgotPassword(w http.ResponseWriter, r *http.Request) {
 		config.Envs.FrontendUrl,
 		resetToken,
 	)
-
-	err = h.mailer.Send(mailer.Email{
-		To: []string{payload.Email},
-		Subject: "Reset Your Password",
-		Body: fmt.Sprintf(
-			"Click the following link to reset your password:\n\n%s\n\nThis link expires in 15 minutes.",
-			resetURL,
-		),
-	})
+	fmt.Println("DEBUG USER EMAIL", user.Email)
+	err = h.emailService.SendResetPassword(user.Email, resetURL)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return

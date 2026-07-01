@@ -97,7 +97,7 @@ func (h *Handler) handleUploadImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// reopen file (same as your profile logic)
+	// reopen file (same as profile logic)
 	file, header, err := r.FormFile("image")
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)

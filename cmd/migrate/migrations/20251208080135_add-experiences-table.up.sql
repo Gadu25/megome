@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS experiences (
   userId INT UNSIGNED NOT NULL,
   title VARCHAR(255) NOT NULL,
   company VARCHAR(255) NOT NULL,
+  logo VARCHAR(255),
   startDate DATE NOT NULL,
   endDate DATE,
   description TEXT,

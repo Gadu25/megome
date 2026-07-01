@@ -105,6 +105,7 @@ type Profile struct {
 	LastName     string  `json:"lastName"`
 	Title        string  `json:"title"`
 	Birthday     *string `json:"birthday"`
+	Tagline      string  `json:"tagline"`
 	Bio          string  `json:"bio"`
 	Phone        string  `json:"phone"`
 	Website      string  `json:"website"`
@@ -130,6 +131,7 @@ type MakeProfilePayload struct {
 	Bio       string  `json:"bio"`
 	FirstName string  `json:"firstName"`
 	LastName  string  `json:"lastName"`
+	Tagline   string  `json:"tagline"`
 	Birthday  *string `json:"birthday"`
 	Title     string  `json:"title"`
 	Phone     string  `json:"phone"`
@@ -140,6 +142,7 @@ type MakeProfilePayload struct {
 type ExperienceStore interface {
 	GetPublicExperiences(userId int) ([]Experience, error)
 	GetExperiences(userId int) ([]Experience, error)
+	GetExperienceById(id int) (Experience, error)
 	CreateExperience(Experience) (Experience, error)
 	UpdateExperience(id int, Experience Experience) (Experience, error)
 	DeleteExperience(id int) (Experience, error)
@@ -150,6 +153,7 @@ type Experience struct {
 	UserID      int     `json:"userId"`
 	Title       string  `json:"title"`
 	Company     string  `json:"company"`
+	Logo        *string  `json:"logo"`
 	StartDate   string  `json:"startDate"`
 	EndDate     *string `json:"endDate"`
 	IsPresent   bool    `json:"isPresent"`
@@ -161,6 +165,7 @@ type Experience struct {
 type ExperiencePayload struct {
 	Title       string  `json:"title" validate:"required"`
 	Company     string  `json:"company" validate:"required"`
+	Logo        *string  `json:"logo"`
 	StartDate   string  `json:"startDate" validate:"required"`
 	EndDate     *string `json:"endDate"`
 	IsPresent   bool    `json:"isPresent"`

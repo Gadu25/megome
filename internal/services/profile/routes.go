@@ -51,6 +51,7 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 		Bio:       r.FormValue("bio"),
 		FirstName: r.FormValue("firstName"),
 		LastName:  r.FormValue("lastName"),
+		Tagline:   r.FormValue("tagline"),
 		Title:     r.FormValue("title"),
 		Birthday:  utils.PointerFromString(r.FormValue("birthday")),
 		Phone:     r.FormValue("phone"),
@@ -130,6 +131,7 @@ func (h *Handler) handleUpdateProfile(w http.ResponseWriter, r *http.Request) {
 	// Save profile to DB
 	err := h.profileStore.MakeProfile(types.Profile{
 		UserID:       userID,
+		Tagline:      payload.Tagline,
 		Bio:          payload.Bio,
 		FirstName:    payload.FirstName,
 		LastName:     payload.LastName,

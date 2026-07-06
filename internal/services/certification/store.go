@@ -3,6 +3,8 @@ package certification
 import (
 	"database/sql"
 	"megome/internal/services/types"
+	"megome/internal/services/utils"
+	"strings"
 )
 
 type Store struct {
@@ -14,7 +16,7 @@ func NewStore(db *sql.DB) *Store {
 }
 
 func (s *Store) GetCertificationById(id int) (types.Certification, error) {
-	row := s.db.QueryRow("SELECT id, title, issuer, issueDate, expirationDate, credentialId, credentialUrl FROM certifications WHERE id = ?", id)
+	row := s.db.QueryRow("SELECT id, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl FROM certifications WHERE id = ?", id)
 
 	var certification types.Certification
 	err := row.Scan(
@@ -22,6 +24,7 @@ func (s *Store) GetCertificationById(id int) (types.Certification, error) {
 		&certification.Title,
 		&certification.Issuer,
 		&certification.IssueDate,
+		&certification.CertificateImage,
 		&certification.ExpirationDate,
 		&certification.CredentialId,
 		&certification.CredentialUrl,
@@ -31,12 +34,20 @@ func (s *Store) GetCertificationById(id int) (types.Certification, error) {
 		return types.Certification{}, err
 	}
 
+	if certification.CertificateImage != nil && *certification.CertificateImage != "" {
+		isFullURL := strings.HasPrefix(*certification.CertificateImage, "https://") || strings.HasPrefix(*certification.CertificateImage, "http://")
+
+		if !isFullURL {
+			*certification.CertificateImage = utils.GetPublicFile(*certification.CertificateImage)
+		}
+	}
+
 	return certification, nil
 }
 
 func (s *Store) GetPublicCertifications(userId int) ([]types.Certification, error) {
 	rows, err := s.db.Query(
-		"SELECT id, title, issuer, issueDate, expirationDate, credentialId, credentialUrl FROM certifications WHERE userId = ?",
+		"SELECT id, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl FROM certifications WHERE userId = ?",
 		userId,
 	)
 	if err != nil {
@@ -58,7 +69,7 @@ func (s *Store) GetPublicCertifications(userId int) ([]types.Certification, erro
 
 func (s *Store) GetCertifications(userId int) ([]types.Certification, error) {
 	rows, err := s.db.Query(
-		"SELECT id, title, issuer, issueDate, expirationDate, credentialId, credentialUrl FROM certifications WHERE userId = ?",
+		"SELECT id, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl FROM certifications WHERE userId = ?",
 		userId,
 	)
 	if err != nil {
@@ -80,10 +91,11 @@ func (s *Store) GetCertifications(userId int) ([]types.Certification, error) {
 
 func (s *Store) CreateCertification(certification types.Certification) (types.Certification, error) {
 	result, err := s.db.Exec(
-		"INSERT INTO certifications (title, issuer, issueDate, expirationDate, credentialId, credentialUrl, userId) VALUES (?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO certifications (title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl, userId) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
 		certification.Title,
 		certification.Issuer,
 		certification.IssueDate,
+		utils.NilIfEmpty(certification.CertificateImage),
 		certification.ExpirationDate,
 		certification.CredentialId,
 		certification.CredentialUrl,
@@ -103,10 +115,11 @@ func (s *Store) CreateCertification(certification types.Certification) (types.Ce
 
 func (s *Store) UpdateCertification(id int, certification types.Certification) (types.Certification, error) {
 	_, err := s.db.Exec(
-		"UPDATE certifications SET title = ?, issuer = ?, issueDate = ?, expirationDate = ?, credentialId = ?, credentialUrl = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
+		"UPDATE certifications SET title = ?, issuer = ?, issueDate = ?, certificateImage = ?, expirationDate = ?, credentialId = ?, credentialUrl = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?",
 		certification.Title,
 		certification.Issuer,
 		certification.IssueDate,
+		utils.NilIfEmpty(certification.CertificateImage),
 		certification.ExpirationDate,
 		certification.CredentialId,
 		certification.CredentialUrl,
@@ -141,12 +154,21 @@ func scanRowIntoCertification(rows *sql.Rows) (types.Certification, error) {
 		&certification.Title,
 		&certification.Issuer,
 		&certification.IssueDate,
+		&certification.CertificateImage,
 		&certification.ExpirationDate,
 		&certification.CredentialId,
 		&certification.CredentialUrl,
 	)
 	if err != nil {
 		return types.Certification{}, err
+	}
+
+	if certification.CertificateImage != nil && *certification.CertificateImage != "" {
+		isFullURL := strings.HasPrefix(*certification.CertificateImage, "https://") || strings.HasPrefix(*certification.CertificateImage, "http://")
+
+		if !isFullURL {
+			*certification.CertificateImage = utils.GetPublicFile(*certification.CertificateImage)
+		}
 	}
 
 	return certification, nil

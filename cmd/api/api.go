@@ -140,7 +140,7 @@ func (s *APIServer) Run() error {
 	educationHandler.RegisterRoutes(internal)
 
 	certificationStore := certification.NewStore(s.db)
-	certificationHandler := certification.NewHandler(certificationStore, userStore)
+	certificationHandler := certification.NewHandler(certificationStore, userStore, r2Client)
 	certificationHandler.RegisterRoutes(internal)
 
 	technologyStore := technology.NewStore(s.db)

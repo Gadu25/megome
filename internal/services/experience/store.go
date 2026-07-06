@@ -2,6 +2,7 @@ package experience
 
 import (
 	"database/sql"
+	"fmt"
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 	"strings"
@@ -37,10 +38,17 @@ func (s *Store) GetExperienceById(id int) (types.Experience, error) {
 		return types.Experience{}, err
 	}
 
+	techsMap, err := s.GetExperienceTechs([]int{id})
+	if err != nil {
+		return types.Experience{}, err
+	}
+
+	experience.Technologies = techsMap[id]
+
 	return experience, nil
 }
 
-func (s *Store) GetPublicExperiences(userID int) ([]types.Experience, error) {
+func (s *Store) getExperiences(userID int) ([]types.Experience, error) {
 	rows, err := s.db.Query(
 		"SELECT id, userId, title, company, logo, startDate, endDate, isPresent, description, createdAt, updatedAt FROM experiences WHERE userId = ?",
 		userID,
@@ -67,31 +75,46 @@ func (s *Store) GetPublicExperiences(userID int) ([]types.Experience, error) {
 	return experiences, nil
 }
 
-func (s *Store) GetExperiences(userID int) ([]types.Experience, error) {
-	rows, err := s.db.Query(
-		"SELECT id, userId, title, company, logo, startDate, endDate, isPresent, description, createdAt, updatedAt FROM experiences WHERE userId = ?",
-		userID,
-	)
+func (s *Store) populateTechs(experiences []types.Experience) ([]types.Experience, error) {
+	if len(experiences) == 0 {
+		return experiences, nil
+	}
+
+	ids := make([]int, 0, len(experiences))
+	for _, exp := range experiences {
+		ids = append(ids, exp.ID)
+	}
+
+	techsMap, err := s.GetExperienceTechs(ids)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
-	experiences := make([]types.Experience, 0)
-
-	for rows.Next() {
-		exp, err := scanRowIntoExperience(rows)
-		if err != nil {
-			return nil, err
-		}
-		experiences = append(experiences, exp)
+	result := make([]types.Experience, len(experiences))
+	for i, exp := range experiences {
+		exp.Technologies = techsMap[exp.ID]
+		result[i] = exp
 	}
 
-	if err := rows.Err(); err != nil {
+	return result, nil
+}
+
+func (s *Store) GetPublicExperiences(userID int) ([]types.Experience, error) {
+	experiences, err := s.getExperiences(userID)
+	if err != nil {
 		return nil, err
 	}
 
-	return experiences, nil
+	return s.populateTechs(experiences)
+}
+
+func (s *Store) GetExperiences(userID int) ([]types.Experience, error) {
+	experiences, err := s.getExperiences(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.populateTechs(experiences)
 }
 
 func (s *Store) CreateExperience(experience types.Experience) (types.Experience, error) {
@@ -148,6 +171,70 @@ func (s *Store) DeleteExperience(id int) (types.Experience, error) {
 		return types.Experience{}, err
 	}
 	return cert, nil
+}
+
+func (s *Store) GetExperienceTechs(experienceIDs []int) (map[int][]types.Technology, error) {
+	if len(experienceIDs) == 0 {
+		return nil, nil
+	}
+
+	placeholders := make([]string, len(experienceIDs))
+	args := make([]interface{}, len(experienceIDs))
+
+	for i, id := range experienceIDs {
+		placeholders[i] = "?"
+		args[i] = id
+	}
+
+	query := fmt.Sprintf(`
+		SELECT
+			et.experienceId,
+			t.id,
+			t.createdByUserId,
+			t.name,
+			t.slug,
+			t.category,
+			t.isVerified,
+			t.createdAt,
+			t.updatedAt
+		FROM experience_techs et
+		INNER JOIN technologies t ON et.techId = t.id
+		WHERE et.experienceId IN (%s)
+	`, strings.Join(placeholders, ","))
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[int][]types.Technology)
+
+	for rows.Next() {
+		var (
+			experienceID int
+			tech         types.Technology
+		)
+
+		err := rows.Scan(
+			&experienceID,
+			&tech.ID,
+			&tech.CreatedByUserId,
+			&tech.Name,
+			&tech.Slug,
+			&tech.Category,
+			&tech.IsVerified,
+			&tech.CreatedAt,
+			&tech.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		result[experienceID] = append(result[experienceID], tech)
+	}
+
+	return result, rows.Err()
 }
 
 func scanRowIntoExperience(rows *sql.Rows) (types.Experience, error) {

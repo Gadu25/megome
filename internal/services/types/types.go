@@ -149,17 +149,18 @@ type ExperienceStore interface {
 }
 
 type Experience struct {
-	ID          int     `json:"id"`
-	UserID      int     `json:"userId"`
-	Title       string  `json:"title"`
-	Company     string  `json:"company"`
-	Logo        *string  `json:"logo"`
-	StartDate   string  `json:"startDate"`
-	EndDate     *string `json:"endDate"`
-	IsPresent   bool    `json:"isPresent"`
-	Description string  `json:"description"`
-	CreatedAt   string  `json:"createdAt"`
-	UpdatedAt   string  `json:"updatedAt"`
+	ID           int          `json:"id"`
+	UserID       int          `json:"userId"`
+	Title        string       `json:"title"`
+	Company      string       `json:"company"`
+	Logo         *string      `json:"logo"`
+	StartDate    string       `json:"startDate"`
+	EndDate      *string      `json:"endDate"`
+	IsPresent    bool         `json:"isPresent"`
+	Description  string       `json:"description"`
+	Technologies []Technology `json:"technologies"`
+	CreatedAt    string       `json:"createdAt"`
+	UpdatedAt    string       `json:"updatedAt"`
 }
 
 type ExperiencePayload struct {
@@ -364,6 +365,29 @@ type ProjectTechPayload struct {
 }
 
 type BatchProjectTechPayload struct {
+	TechIDs []int `json:"techIds" validate:"required,min=1"`
+}
+
+type ExperienceTechStore interface {
+	CreateExperienceTech(ExperienceTech) error
+	CreateExperienceTechBatch(int, []int) error
+	DeleteExperienceTech(int) error
+	GetExperienceTechs([]int) (map[int][]Technology, error)
+}
+
+type ExperienceTech struct {
+	ID           int    `json:"id"`
+	ExperienceID int    `json:"experienceId"`
+	TechID       int    `json:"techId"`
+	CreatedAt    string `json:"createdAt"`
+}
+
+type ExperienceTechPayload struct {
+	ExperienceID int `json:"experienceId"`
+	TechID       int `json:"techId"`
+}
+
+type BatchExperienceTechPayload struct {
 	TechIDs []int `json:"techIds" validate:"required,min=1"`
 }
 

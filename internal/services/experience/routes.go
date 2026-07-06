@@ -120,6 +120,12 @@ func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request)
 		Description: r.FormValue("description"),
 	}
 
+	if err := utils.Validate.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload %v", errors))
+		return
+	}
+
 	userID := auth.GetUserIDFromContext(r.Context())
 
 	logoKey, err := h.uploadLogo(r)
@@ -138,6 +144,7 @@ func (h *Handler) handleCreateExperience(w http.ResponseWriter, r *http.Request)
 		IsPresent:   payload.IsPresent,
 		Description: payload.Description,
 	})
+
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return

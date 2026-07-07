@@ -1,0 +1,1 @@
+This directory contains HTTP response helpers. It provides convenience functions (`WriteJSON`, `WriteError`, `WriteCreated`) for writing consistent JSON responses with proper status codes and content types.

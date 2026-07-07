@@ -1,0 +1,1 @@
+This directory contains domain logic split by domain area (user, project, technology, skill, etc.). Each subdirectory defines the models, repository interfaces, service functions, and SQL queries for its respective domain.

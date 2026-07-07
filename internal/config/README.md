@@ -1,0 +1,1 @@
+This directory loads application configuration from environment variables. It defines a `Config` struct with fields for database credentials, server port, auth secrets, and other settings, populated via `config.Load()` at startup.

@@ -1,0 +1,238 @@
+package handler
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"megome/internal/domain/certification"
+	"megome/internal/domain/user"
+	"megome/internal/middleware"
+	"megome/internal/pkg/httputil"
+	"megome/internal/pkg/storage"
+	"megome/internal/pkg/validator"
+	"net/http"
+
+	playvalidator "github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
+)
+
+type CertificationHandler struct {
+	certificationStore *certification.Repository
+	userStore          *user.Repository
+	r2Client           *storage.R2Client
+}
+
+type CertificationResponse struct {
+	Message      string                  `json:"message"`
+	Certificates []certification.Certification `json:"certificates"`
+}
+
+type SingleCertResponse struct {
+	Message     string                    `json:"message"`
+	Certificate certification.Certification `json:"certificate"`
+}
+
+func NewCertificationHandler(certificationStore *certification.Repository, userStore *user.Repository, r2Client *storage.R2Client) *CertificationHandler {
+	return &CertificationHandler{certificationStore: certificationStore, userStore: userStore, r2Client: r2Client}
+}
+
+func (h *CertificationHandler) RegisterRoutes(router *mux.Router) {
+	router.HandleFunc("/certification", middleware.WithJWTAuth(h.handleViewCertification, h.userStore)).Methods("GET")
+	router.HandleFunc("/certification", middleware.WithJWTAuth(h.handleCreateCertification, h.userStore)).Methods("POST")
+	router.HandleFunc("/certification/{id}", middleware.WithJWTAuth(h.handleEditCertification, h.userStore)).Methods("PUT")
+	router.HandleFunc("/certification/{id}", middleware.WithJWTAuth(h.handleDeleteCertification, h.userStore)).Methods("DELETE")
+}
+
+func (h *CertificationHandler) uploadCertificateImage(r *http.Request) (*string, error) {
+	file, handler, err := r.FormFile("certificateImage")
+	if err != nil {
+		return nil, nil
+	}
+	defer file.Close()
+
+	if handler.Size > 1<<20 {
+		return nil, fmt.Errorf("file too large (max 1MB)")
+	}
+
+	data, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	sniffLen := 512
+	if len(data) < sniffLen {
+		sniffLen = len(data)
+	}
+
+	fileType := http.DetectContentType(data[:sniffLen])
+	if fileType != "image/jpeg" && fileType != "image/png" && fileType != "image/webp" {
+		return nil, fmt.Errorf("invalid file type")
+	}
+
+	key, err := storage.GenerateKey(
+		fmt.Sprintf("certification/%d/certificateImage", middleware.GetUserIDFromContext(r.Context())),
+		httputil.GenerateUUID(),
+		fileType,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	err = h.r2Client.UploadFromReader(
+		r.Context(),
+		key,
+		bytes.NewReader(data),
+		int64(len(data)),
+		handler.Header.Get("Content-Type"),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return &key, nil
+}
+
+func (h *CertificationHandler) handleViewCertification(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserIDFromContext(r.Context())
+	certifications, err := h.certificationStore.GetCertifications(userID)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	resp := CertificationResponse{
+		Message:      "Certification fetched successfully",
+		Certificates: certifications,
+	}
+	httputil.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *CertificationHandler) handleCreateCertification(w http.ResponseWriter, r *http.Request) {
+	payload := certification.CertificationPayload{
+		Title:          r.FormValue("title"),
+		Issuer:         r.FormValue("issuer"),
+		IssueDate:      r.FormValue("issueDate"),
+		ExpirationDate: httputil.PointerFromString(r.FormValue("expirationDate")),
+		CredentialId:   httputil.PointerFromString(r.FormValue("credentialId")),
+		CredentialUrl:  httputil.PointerFromString(r.FormValue("credentialUrl")),
+	}
+
+	if err := validator.Validate.Struct(payload); err != nil {
+		errors := err.(playvalidator.ValidationErrors)
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload %v", errors))
+		return
+	}
+
+	userID := middleware.GetUserIDFromContext(r.Context())
+
+	certificateImageKey, err := h.uploadCertificateImage(r)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	cert, err := h.certificationStore.CreateCertification(certification.Certification{
+		UserID:           userID,
+		Title:            payload.Title,
+		Issuer:           payload.Issuer,
+		IssueDate:        payload.IssueDate,
+		CertificateImage: certificateImageKey,
+		ExpirationDate:   payload.ExpirationDate,
+		CredentialId:     payload.CredentialId,
+		CredentialUrl:    payload.CredentialUrl,
+	})
+
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	resp := SingleCertResponse{
+		Message:     "Certification created successfully",
+		Certificate: cert,
+	}
+	httputil.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *CertificationHandler) handleEditCertification(w http.ResponseWriter, r *http.Request) {
+	payload := certification.CertificationPayload{
+		Title:          r.FormValue("title"),
+		Issuer:         r.FormValue("issuer"),
+		IssueDate:      r.FormValue("issueDate"),
+		ExpirationDate: httputil.PointerFromString(r.FormValue("expirationDate")),
+		CredentialId:   httputil.PointerFromString(r.FormValue("credentialId")),
+		CredentialUrl:  httputil.PointerFromString(r.FormValue("credentialUrl")),
+	}
+
+	if err := validator.Validate.Struct(payload); err != nil {
+		errors := err.(playvalidator.ValidationErrors)
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload %v", errors))
+		return
+	}
+
+	id, err := httputil.GetRequestId(r)
+	if err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	existing, err := h.certificationStore.GetCertificationById(id)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	certificateImageKey, err := h.uploadCertificateImage(r)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if certificateImageKey != nil && existing.CertificateImage != nil {
+		_ = h.r2Client.DeleteObject(r.Context(), *existing.CertificateImage)
+	}
+
+	cert, err := h.certificationStore.UpdateCertification(id, certification.Certification{
+		Title:            payload.Title,
+		Issuer:           payload.Issuer,
+		IssueDate:        payload.IssueDate,
+		CertificateImage: certificateImageKey,
+		ExpirationDate:   payload.ExpirationDate,
+		CredentialId:     payload.CredentialId,
+		CredentialUrl:    payload.CredentialUrl,
+	})
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	resp := SingleCertResponse{
+		Message:     "Certification edited successfully",
+		Certificate: cert,
+	}
+	httputil.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *CertificationHandler) handleDeleteCertification(w http.ResponseWriter, r *http.Request) {
+	id, err := httputil.GetRequestId(r)
+	fmt.Println("[DEBUG]", id)
+	if err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	cert, err := h.certificationStore.DeleteCertification(id)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if cert.CertificateImage != nil && *cert.CertificateImage != "" {
+		_ = h.r2Client.DeleteObject(r.Context(), *cert.CertificateImage)
+	}
+
+	resp := SingleCertResponse{
+		Message:     "Certification deleted successfully",
+		Certificate: cert,
+	}
+	httputil.WriteJSON(w, http.StatusOK, resp)
+}

@@ -1,0 +1,1 @@
+This directory contains seed functions that populate the database with initial reference data. Currently it provides `SeedTechnologies` to insert a predefined list of technology entries (e.g., Go, React, Docker).

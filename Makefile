@@ -1,5 +1,5 @@
 build:
-	@go build -o bin/megome cmd/main.go
+	@go build -o bin/megome cmd/api/main.go
 
 test:
 	@go test -v ./...

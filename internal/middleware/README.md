@@ -1,0 +1,1 @@
+This directory contains HTTP middleware for the API. It includes authentication (JWT token validation), rate limiting (per-IP and per-token), API request logging, and a custom `ResponseWriter` wrapper for capturing response status codes.

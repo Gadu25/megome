@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
-	"megome/config"
-	"megome/internal/data/db"
+	"megome/internal/config"
+	"megome/internal/db"
 	"os"
 
 	mysqlCfg "github.com/go-sql-driver/mysql"

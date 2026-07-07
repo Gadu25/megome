@@ -1,0 +1,1 @@
+This directory provides authentication utilities: JWT token creation and validation, password hashing and comparison (bcrypt), Google OAuth integration, and context helpers for extracting authenticated user info from request context.

@@ -2,6 +2,7 @@ package profile
 
 import (
 	"database/sql"
+	"fmt"
 	"megome/internal/services/types"
 	"megome/internal/services/utils"
 	"strings"
@@ -16,7 +17,7 @@ func NewStore(db *sql.DB) *Store {
 }
 
 func (s *Store) GetPublicProfile(userId int) (*types.Profile, error) {
-	row := s.db.QueryRow("SELECT id, userId, tagline, bio, firstname, lastname, title, birthday, phone, website, location, profileImage, createdAt, updatedAt profiles WHERE userId = ? LIMIT 1", userId)
+	row := s.db.QueryRow("SELECT id, userId, tagline, bio, firstname, lastname, title, birthday, phone, website, location, profileImage, createdAt, updatedAt FROM profiles WHERE userId = ? LIMIT 1", userId)
 	return scanRowIntoProfile(row)
 }
 

@@ -9,6 +9,7 @@ import (
 	"megome/internal/services/certification"
 	"megome/internal/services/dashboard"
 	"megome/internal/services/education"
+	experiencetech "megome/internal/services/experiencetech"
 	"megome/internal/services/experience"
 	"megome/internal/services/initData"
 	personalaccesstokens "megome/internal/services/personalAccessTokens"
@@ -140,7 +141,7 @@ func (s *APIServer) Run() error {
 	educationHandler.RegisterRoutes(internal)
 
 	certificationStore := certification.NewStore(s.db)
-	certificationHandler := certification.NewHandler(certificationStore, userStore)
+	certificationHandler := certification.NewHandler(certificationStore, userStore, r2Client)
 	certificationHandler.RegisterRoutes(internal)
 
 	technologyStore := technology.NewStore(s.db)
@@ -158,6 +159,10 @@ func (s *APIServer) Run() error {
 	projectTechStore := projecttech.NewStore(s.db)
 	projectTechHandler := projecttech.NewHandler(projectTechStore, userStore)
 	projectTechHandler.RegisterRoutes(internal)
+
+	experienceTechStore := experiencetech.NewStore(s.db)
+	experienceTechHandler := experiencetech.NewHandler(experienceTechStore, userStore)
+	experienceTechHandler.RegisterRoutes(internal)
 
 	personalAccessTokenStore := personalaccesstokens.NewStore(s.db)
 	personalAccesstokenHandler := personalaccesstokens.NewHandler(userStore, personalAccessTokenStore)

@@ -96,7 +96,7 @@ func (h *ProfileHandler) handleUpdateProfile(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := validator.Validate.Struct(payload); err != nil {
-		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload: %w", err))
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload %v", err))
 		return
 	}
 

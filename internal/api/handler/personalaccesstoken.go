@@ -29,7 +29,7 @@ type PATResponse struct {
 }
 
 type PATCountResponse struct {
-	Message      string `json:"mesage"`
+	Message      string `json:"message"`
 	UserPatCount int    `json:"userPatCount"`
 }
 
@@ -83,7 +83,7 @@ func (h *PersonalAccessTokenHandler) handleCreatePAT(w http.ResponseWriter, r *h
 	}
 
 	resp := PATResponse{
-		Message: "Token is Successfully created!",
+		Message: "Token successfully created",
 		PAT:     pat,
 	}
 

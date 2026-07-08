@@ -59,18 +59,19 @@ func (h *UserHandler) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	u, err := h.userStore.GetUserByEmailOrUsername(payload.EmailOrUsername)
 	if err != nil {
-		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("Not found, invalid email or password"))
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid email or password"))
 		return
 	}
 
 	if !auth.ComparePasswords(u.Password, []byte(payload.Password)) {
-		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("Not found, invalid email or password"))
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid email or password"))
 		return
 	}
 
 	at, rt, err := h.getTokens(u.ID)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	resp := refreshtoken.AuthResponse{
@@ -153,12 +154,12 @@ func (h *UserHandler) handleLogout(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) handleVerify(w http.ResponseWriter, r *http.Request) {
 	accesstoken, err := r.Cookie("Authentication")
 	if err != nil {
-		httputil.WriteError(w, http.StatusUnauthorized, fmt.Errorf("Error getting access cookie %v", err))
+		httputil.WriteError(w, http.StatusUnauthorized, fmt.Errorf("missing access cookie"))
 		return
 	}
 	hasErr := auth.VerifyToken(accesstoken.Value)
 	if hasErr != nil {
-		httputil.WriteError(w, http.StatusUnauthorized, fmt.Errorf("Access token is invalid %v", err))
+		httputil.WriteError(w, http.StatusUnauthorized, fmt.Errorf("invalid access token"))
 		return
 	}
 
@@ -331,15 +332,6 @@ func (h *UserHandler) handleGoogleCallback(
 				)
 				return
 			}
-
-			if err != nil {
-				httputil.WriteError(
-					w,
-					http.StatusInternalServerError,
-					err,
-				)
-				return
-			}
 		}
 
 		email := googleUser.Email
@@ -429,19 +421,19 @@ func (h *UserHandler) handleResetPassword(w http.ResponseWriter, r *http.Request
 
 	if err := validator.Validate.Struct(payload); err != nil {
 		errors := err.(playvalidator.ValidationErrors)
-		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload: %v", errors))
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload %v", errors))
 		return
 	}
 
 	err := h.passwordForgot.ChangePassword(payload.Token, payload.Password)
 	if err != nil {
-		httputil.WriteError(w, http.StatusInternalServerError, fmt.Errorf("Failed: %v", err))
+		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 
 	resp := refreshtoken.AuthResponse{
 		Success: true,
-		Message: "passsword successfully reset!",
+		Message: "password successfully reset",
 	}
 
 	httputil.WriteJSON(w, http.StatusOK, resp)
@@ -457,7 +449,7 @@ func (h *UserHandler) handleForgotPassword(w http.ResponseWriter, r *http.Reques
 
 	if err := validator.Validate.Struct(payload); err != nil {
 		errors := err.(playvalidator.ValidationErrors)
-		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload: %v", errors))
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload %v", errors))
 		return
 	}
 

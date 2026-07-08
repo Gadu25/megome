@@ -1,9 +1,12 @@
 package middleware
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"sync"
+
+	"megome/internal/pkg/httputil"
 
 	"golang.org/x/time/rate"
 )
@@ -57,7 +60,7 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 		limiter := rl.getClient(ip)
 
 		if !limiter.Allow() {
-			http.Error(w, "rate limit exceeded", http.StatusTooManyRequests)
+			httputil.WriteError(w, http.StatusTooManyRequests, fmt.Errorf("rate limit exceeded"))
 			return
 		}
 

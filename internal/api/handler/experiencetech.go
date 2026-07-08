@@ -36,13 +36,13 @@ func (h *ExperienceTechHandler) RegisterRoutes(router *mux.Router) {
 func (h *ExperienceTechHandler) handleCreateExperienceTech(w http.ResponseWriter, r *http.Request) {
 	experienceID, err := strconv.Atoi(r.FormValue("experienceId"))
 	if err != nil {
-		http.Error(w, "invalid experienceId", http.StatusBadRequest)
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid experienceId"))
 		return
 	}
 
 	techID, err := strconv.Atoi(r.FormValue("techId"))
 	if err != nil {
-		http.Error(w, "invalid techId", http.StatusBadRequest)
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid techId"))
 		return
 	}
 

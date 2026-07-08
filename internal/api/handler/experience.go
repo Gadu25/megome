@@ -87,7 +87,8 @@ func (h *ExperienceHandler) uploadLogo(r *http.Request) (*string, error) {
 func (h *ExperienceHandler) handleCreateExperience(w http.ResponseWriter, r *http.Request) {
 	isPresent, err := strconv.ParseBool(r.FormValue("isPresent"))
 	if err != nil {
-		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("Error handling payload: %w", err))
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid isPresent value"))
+		return
 	}
 
 	payload := experience.ExperiencePayload{
@@ -139,7 +140,8 @@ func (h *ExperienceHandler) handleCreateExperience(w http.ResponseWriter, r *htt
 func (h *ExperienceHandler) handleEditExperience(w http.ResponseWriter, r *http.Request) {
 	isPresent, err := strconv.ParseBool(r.FormValue("isPresent"))
 	if err != nil {
-		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("Error handling payload: %w", err))
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid isPresent value"))
+		return
 	}
 
 	payload := experience.ExperiencePayload{

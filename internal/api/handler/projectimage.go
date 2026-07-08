@@ -131,7 +131,7 @@ func (h *ProjectImageHandler) handleSetCover(w http.ResponseWriter, r *http.Requ
 	defer file.Close()
 
 	if handler.Size > 1<<20 {
-		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("file too large"))
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("file too large (max 1MB)"))
 		return
 	}
 

@@ -42,13 +42,13 @@ func (h *ProjectTechHandler) RegisterRoutes(router *mux.Router) {
 func (h *ProjectTechHandler) handleCreateProjectTech(w http.ResponseWriter, r *http.Request) {
 	projectID, err := strconv.Atoi(r.FormValue("projectId"))
 	if err != nil {
-		http.Error(w, "invalid projectId", http.StatusBadRequest)
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid projectId"))
 		return
 	}
 
 	techID, err := strconv.Atoi(r.FormValue("techId"))
 	if err != nil {
-		http.Error(w, "invalid techId", http.StatusBadRequest)
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid techId"))
 		return
 	}
 
@@ -77,7 +77,7 @@ func (h *ProjectTechHandler) handleCreateProjectTech(w http.ResponseWriter, r *h
 		return
 	}
 	httputil.WriteJSON(w, http.StatusOK, map[string]string{
-		"message": "Certification is successfully created",
+		"message": "Project tech successfully created",
 	})
 }
 

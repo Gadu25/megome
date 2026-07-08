@@ -30,7 +30,7 @@ func (h *RefreshTokenHandler) handleRefresh(w http.ResponseWriter, r *http.Reque
 
 	newRefreshToken, newAccessToken, err := h.refreshStore.RefreshRotation(refreshToken)
 	if err != nil {
-		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("Cookie error %v", err))
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid refresh token"))
 		return
 	}
 

@@ -183,7 +183,21 @@ func (h *UserHandler) getTokens(userId int) (string, string, error) {
 }
 
 func (h *UserHandler) handleGoogleLogin(w http.ResponseWriter, r *http.Request) {
-	state := "random-state"
+	state, err := httputil.GenerateRandomToken("oauth_")
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "oauth_state",
+		Value:    state,
+		HttpOnly: true,
+		Secure:   true,
+		Path:     "/",
+		MaxAge:   600,
+		SameSite: http.SameSiteLaxMode,
+	})
 
 	oauthConfig := auth.NewGoogleOAuthConfig()
 	url := oauthConfig.AuthCodeURL(state)
@@ -199,26 +213,31 @@ func (h *UserHandler) handleGoogleCallback(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
-	state := r.URL.Query().Get("state")
+	queryState := r.URL.Query().Get("state")
 	code := r.URL.Query().Get("code")
 
-	if state == "" || code == "" {
+	if code == "" {
 		httputil.WriteError(
 			w,
 			http.StatusBadRequest,
-			fmt.Errorf("missing oauth parameters"),
+			fmt.Errorf("missing authorization code"),
 		)
 		return
 	}
 
-	if state != "random-state" {
+	cookie, err := r.Cookie("oauth_state")
+	if err != nil || cookie.Value == "" || cookie.Value != queryState {
 		httputil.WriteError(
 			w,
 			http.StatusBadRequest,
-			fmt.Errorf("invalid state"),
+			fmt.Errorf("invalid state parameter"),
 		)
 		return
 	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name: "oauth_state", Value: "", MaxAge: -1, Path: "/",
+	})
 
 	oauthConfig := auth.NewGoogleOAuthConfig()
 

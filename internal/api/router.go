@@ -11,6 +11,7 @@ import (
 	"megome/internal/config"
 	"megome/internal/domain/apilog"
 	"megome/internal/domain/certification"
+	"megome/internal/domain/completion"
 	"megome/internal/domain/education"
 	"megome/internal/domain/experience"
 	"megome/internal/domain/passwordforgot"
@@ -110,6 +111,7 @@ func (s *APIServer) Run() error {
 	projectRepo := project.NewRepository(s.db, r2Client)
 	patRepo := personalaccesstoken.NewRepository(s.db)
 	apiLogRepo := apilog.NewRepository(s.db)
+	completionRepo := completion.NewRepository(s.db)
 
 	handler.NewRefreshTokenHandler(refreshRepo).RegisterRoutes(internal)
 	handler.NewUserHandler(userRepo, profileRepo, refreshRepo, emailService, passwordForgotRepo).RegisterRoutes(internal)
@@ -127,6 +129,7 @@ func (s *APIServer) Run() error {
 	handler.NewPersonalAccessTokenHandler(userRepo, patRepo).RegisterRoutes(internal)
 	handler.NewAPILogHandler(apiLogRepo, userRepo).RegisterRoutes(internal)
 	handler.NewDashboardHandler(userRepo, patRepo, apiLogRepo).RegisterRoutes(internal)
+	handler.NewCompletionHandler(completionRepo, userRepo).RegisterRoutes(internal)
 
 	public.NewProfileHandler(profileRepo, patRepo, apiLogRepo).RegisterRoutes(publicRouter)
 	public.NewSkillHandler(skillRepo, patRepo, apiLogRepo).RegisterRoutes(publicRouter)

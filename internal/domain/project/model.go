@@ -3,9 +3,7 @@ package project
 import "megome/internal/domain/technology"
 
 type ProjectStore interface {
-	GetPublicProjectById(int) (ProjectFull, error)
 	GetProjectById(int) (ProjectFull, error)
-	GetPublicProjects(int) ([]ProjectFull, error)
 	GetProjects(int) ([]Project, error)
 	GetProjectsFull(int) ([]ProjectFull, error)
 	CreateProject(Project) (ProjectFull, error)

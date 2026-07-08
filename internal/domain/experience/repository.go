@@ -99,15 +99,6 @@ func (s *Repository) populateTechs(experiences []Experience) ([]Experience, erro
 	return result, nil
 }
 
-func (s *Repository) GetPublicExperiences(userID int) ([]Experience, error) {
-	experiences, err := s.getExperiences(userID)
-	if err != nil {
-		return nil, err
-	}
-
-	return s.populateTechs(experiences)
-}
-
 func (s *Repository) GetExperiences(userID int) ([]Experience, error) {
 	experiences, err := s.getExperiences(userID)
 	if err != nil {

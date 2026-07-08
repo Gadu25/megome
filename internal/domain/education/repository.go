@@ -38,28 +38,6 @@ func (s *Repository) GetEducationById(id int) (Education, error) {
 	return education, nil
 }
 
-func (s *Repository) GetPublicEducations(userID int) ([]Education, error) {
-	rows, err := s.db.Query(
-		"SELECT id, school, description, degree, fieldOfStudy, startDate, endDate, isPresent from education WHERE userId = ?",
-		userID,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	educations := make([]Education, 0)
-
-	for rows.Next() {
-		educ, err := scanRowIntoEducation(rows)
-		if err != nil {
-			return nil, err
-		}
-		educations = append(educations, educ)
-	}
-	return educations, nil
-}
-
 func (s *Repository) GetEducations(userID int) ([]Education, error) {
 	rows, err := s.db.Query(
 		"SELECT id, school, description, degree, fieldOfStudy, startDate, endDate, isPresent from education WHERE userId = ?",

@@ -42,7 +42,7 @@ func (h *ProfileHandler) RegisterRoutes(router *mux.Router) {
 func (h *ProfileHandler) handleGetPublicProfile(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetPATUserIDFromContext(r.Context())
 
-	p, err := h.profileStore.GetPublicProfile(userID)
+	p, err := h.profileStore.GetProfile(userID)
 
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)

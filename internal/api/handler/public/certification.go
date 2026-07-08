@@ -42,7 +42,7 @@ func (h *CertificationHandler) RegisterRoutes(router *mux.Router) {
 func (h *CertificationHandler) handleGetPublicCertification(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetPATUserIDFromContext(r.Context())
 
-	certificates, err := h.certificationStore.GetPublicCertifications(userID)
+	certificates, err := h.certificationStore.GetCertifications(userID)
 
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)

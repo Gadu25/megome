@@ -14,11 +14,6 @@ func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (s *Repository) GetPublicProfile(userId int) (*Profile, error) {
-	row := s.db.QueryRow("SELECT id, userId, tagline, bio, firstname, lastname, title, birthday, phone, website, location, profileImage, createdAt, updatedAt FROM profiles WHERE userId = ? LIMIT 1", userId)
-	return scanRowIntoProfile(row)
-}
-
 func (s *Repository) GetProfile(userId int) (*Profile, error) {
 	row := s.db.QueryRow("SELECT id, userId, tagline, bio, firstname, lastname, title, birthday, phone, website, location, profileImage, createdAt, updatedAt FROM profiles WHERE userId = ? LIMIT 1", userId)
 	return scanRowIntoProfile(row)

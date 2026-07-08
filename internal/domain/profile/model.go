@@ -1,7 +1,6 @@
 package profile
 
 type ProfileStore interface {
-	GetPublicProfile(int) (*Profile, error)
 	GetProfile(userId int) (*Profile, error)
 	MakeProfile(Profile) error
 	UpsertOAuthProfile(Profile) error

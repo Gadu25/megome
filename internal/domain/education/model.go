@@ -1,7 +1,6 @@
 package education
 
 type EducationStore interface {
-	GetPublicEducations(userId int) ([]Education, error)
 	GetEducations(userId int) ([]Education, error)
 	CreateEducation(Education) (Education, error)
 	UpdateEducation(id int, education Education) (Education, error)

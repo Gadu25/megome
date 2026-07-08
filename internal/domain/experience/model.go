@@ -3,7 +3,6 @@ package experience
 import "megome/internal/domain/technology"
 
 type ExperienceStore interface {
-	GetPublicExperiences(userId int) ([]Experience, error)
 	GetExperiences(userId int) ([]Experience, error)
 	GetExperienceById(id int) (Experience, error)
 	CreateExperience(Experience) (Experience, error)

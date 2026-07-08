@@ -1,7 +1,6 @@
 package certification
 
 type CertificationStore interface {
-	GetPublicCertifications(userId int) ([]Certification, error)
 	GetCertifications(userId int) ([]Certification, error)
 	GetCertificationById(id int) (Certification, error)
 	CreateCertification(Certification) (Certification, error)

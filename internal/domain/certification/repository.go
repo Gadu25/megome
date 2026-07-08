@@ -44,28 +44,6 @@ func (s *Repository) GetCertificationById(id int) (Certification, error) {
 	return certification, nil
 }
 
-func (s *Repository) GetPublicCertifications(userId int) ([]Certification, error) {
-	rows, err := s.db.Query(
-		"SELECT id, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl FROM certifications WHERE userId = ?",
-		userId,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	certifications := make([]Certification, 0)
-
-	for rows.Next() {
-		cert, err := scanRowIntoCertification(rows)
-		if err != nil {
-			return nil, err
-		}
-		certifications = append(certifications, cert)
-	}
-	return certifications, nil
-}
-
 func (s *Repository) GetCertifications(userId int) ([]Certification, error) {
 	rows, err := s.db.Query(
 		"SELECT id, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl FROM certifications WHERE userId = ?",

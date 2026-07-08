@@ -32,33 +32,6 @@ func (s *Repository) GetSkillById(id int) (Skill, error) {
 	return skill, nil
 }
 
-func (s *Repository) GetPublicSkills(userID int) ([]Skill, error) {
-	rows, err := s.db.Query(
-		"SELECT * FROM skills WHERE userId = ?",
-		userID,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	skills := make([]Skill, 0)
-
-	for rows.Next() {
-		skill, err := scanRowIntoSkill(rows)
-		if err != nil {
-			return nil, err
-		}
-		skills = append(skills, skill)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return skills, nil
-}
-
 func (s *Repository) GetSkills(userID int) ([]Skill, error) {
 	rows, err := s.db.Query(
 		"SELECT * FROM skills WHERE userId = ?",

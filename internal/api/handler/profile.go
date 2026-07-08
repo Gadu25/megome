@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"io"
 	"megome/internal/domain/profile"
 	"megome/internal/domain/user"
 	"megome/internal/middleware"
@@ -70,53 +71,28 @@ func (h *ProfileHandler) handleUpdateProfile(w http.ResponseWriter, r *http.Requ
 			return
 		}
 
-		buffer := make([]byte, 512)
-		_, err := file.Read(buffer)
+		data, err := io.ReadAll(file)
+		file.Close()
 		if err != nil {
 			httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("failed to read file: %w", err))
 			return
 		}
-		fileType := http.DetectContentType(buffer)
 
-		if fileType != "image/jpeg" && fileType != "image/png" && fileType != "image/webp" {
-			httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid file type: %v", fileType))
+		key, err := h.r2Client.UploadImage(r.Context(), data,
+			fmt.Sprintf("profiles/%d", userID),
+			"avatar",
+		)
+		if err != nil {
+			httputil.WriteError(w, http.StatusInternalServerError, fmt.Errorf("failed to upload image: %w", err))
 			return
 		}
 
-		file, header, err := r.FormFile("profileImage")
-		if err == nil && file != nil {
-			defer file.Close()
-
-			existing, err := h.profileStore.GetProfile(userID)
-			key, err := storage.GenerateKey(fmt.Sprintf("profiles/%d", userID), "avatar", fileType)
-
-			if err != nil {
-				httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid file name: %w", err))
-				return
-			}
-
-			if existing != nil {
-				oldKey := existing.ProfileImage
-				if oldKey != "" {
-					err = h.r2Client.DeleteObject(r.Context(), oldKey)
-					if err != nil {
-						httputil.WriteError(w, http.StatusInternalServerError, fmt.Errorf("failed to update image: %w", err))
-						return
-					}
-				}
-			}
-
-			err = h.r2Client.UploadFromReader(r.Context(), key, file, header.Size, header.Header.Get("Content-Type"))
-			if err != nil {
-				httputil.WriteError(w, http.StatusInternalServerError, fmt.Errorf("failed to upload image: %w", err))
-				return
-			}
-
-			profileImageKey = key
-		} else {
-			httputil.WriteError(w, http.StatusInternalServerError, err)
-			return
+		existing, err := h.profileStore.GetProfile(userID)
+		if err == nil && existing != nil && existing.ProfileImage != "" {
+			_ = h.r2Client.DeleteObject(r.Context(), existing.ProfileImage)
 		}
+
+		profileImageKey = key
 	}
 
 	if err := validator.Validate.Struct(payload); err != nil {

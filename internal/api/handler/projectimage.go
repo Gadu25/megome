@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"io"
 	"megome/internal/domain/project"
 	"megome/internal/domain/user"
 	"megome/internal/middleware"
@@ -84,42 +85,15 @@ func (h *ProjectImageHandler) handleUploadImage(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	buffer := make([]byte, 512)
-	_, err = file.Read(buffer)
+	data, err := io.ReadAll(file)
 	if err != nil {
 		httputil.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	fileType := http.DetectContentType(buffer)
-	if fileType != "image/jpeg" && fileType != "image/png" && fileType != "image/webp" {
-		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid file type"))
-		return
-	}
-
-	file, header, err := r.FormFile("image")
-	if err != nil {
-		httputil.WriteError(w, http.StatusInternalServerError, err)
-		return
-	}
-	defer file.Close()
-
-	key, err := storage.GenerateKey(
+	key, err := h.r2Client.UploadImage(r.Context(), data,
 		fmt.Sprintf("projects/%d/%s", projectId, imgType),
 		httputil.GenerateUUID(),
-		fileType,
-	)
-	if err != nil {
-		httputil.WriteError(w, http.StatusBadRequest, err)
-		return
-	}
-
-	err = h.r2Client.UploadFromReader(
-		r.Context(),
-		key,
-		file,
-		header.Size,
-		header.Header.Get("Content-Type"),
 	)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
@@ -161,29 +135,18 @@ func (h *ProjectImageHandler) handleSetCover(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	buffer := make([]byte, 512)
-	_, err = file.Read(buffer)
+	data, err := io.ReadAll(file)
 	if err != nil {
 		httputil.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 
-	fileType := http.DetectContentType(buffer)
-
-	file, header, err := r.FormFile("image")
-	if err != nil {
-		httputil.WriteError(w, http.StatusInternalServerError, err)
-		return
-	}
-	defer file.Close()
-
-	key, err := storage.GenerateKey(
+	key, err := h.r2Client.UploadImage(r.Context(), data,
 		fmt.Sprintf("projects/%d", projectId),
 		"cover",
-		fileType,
 	)
 	if err != nil {
-		httputil.WriteError(w, http.StatusBadRequest, err)
+		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -195,14 +158,6 @@ func (h *ProjectImageHandler) handleSetCover(w http.ResponseWriter, r *http.Requ
 			}
 		}
 	}
-
-	err = h.r2Client.UploadFromReader(
-		r.Context(),
-		key,
-		file,
-		header.Size,
-		header.Header.Get("Content-Type"),
-	)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return

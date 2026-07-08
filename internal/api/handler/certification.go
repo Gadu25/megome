@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"megome/internal/domain/certification"
@@ -59,31 +58,9 @@ func (h *CertificationHandler) uploadCertificateImage(r *http.Request) (*string,
 		return nil, err
 	}
 
-	sniffLen := 512
-	if len(data) < sniffLen {
-		sniffLen = len(data)
-	}
-
-	fileType := http.DetectContentType(data[:sniffLen])
-	if fileType != "image/jpeg" && fileType != "image/png" && fileType != "image/webp" {
-		return nil, fmt.Errorf("invalid file type")
-	}
-
-	key, err := storage.GenerateKey(
+	key, err := h.r2Client.UploadImage(r.Context(), data,
 		fmt.Sprintf("certification/%d/certificateImage", middleware.GetUserIDFromContext(r.Context())),
 		httputil.GenerateUUID(),
-		fileType,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	err = h.r2Client.UploadFromReader(
-		r.Context(),
-		key,
-		bytes.NewReader(data),
-		int64(len(data)),
-		handler.Header.Get("Content-Type"),
 	)
 	if err != nil {
 		return nil, err

@@ -1,9 +1,11 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -89,4 +91,21 @@ func (r *R2Client) DeleteObject(ctx context.Context, key string) error {
 	fmt.Printf("[R2 DELETE] bucket=%s key=%s\n", r.Bucket, key)
 
 	return nil
+}
+
+// UploadImage detects the content type, validates it's an allowed image,
+// generates a key, and uploads the data. Returns the generated key.
+func (r *R2Client) UploadImage(ctx context.Context, data []byte, prefix, filename string) (string, error) {
+	fileType := http.DetectContentType(data)
+
+	key, err := GenerateKey(prefix, filename, fileType)
+	if err != nil {
+		return "", err
+	}
+
+	if err := r.UploadFromReader(ctx, key, bytes.NewReader(data), int64(len(data)), fileType); err != nil {
+		return "", err
+	}
+
+	return key, nil
 }

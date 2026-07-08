@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS technologies (
     'database',
     'mobile',
     'tool',
-    'language'
+    'language',
+    'cms',
+    'ecommerce'
   ) NOT NULL,
 
   isVerified BOOLEAN NOT NULL DEFAULT FALSE,

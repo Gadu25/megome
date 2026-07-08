@@ -18,22 +18,7 @@ func NewRepository(db *sql.DB) *Repository {
 
 func (s *Repository) GetExperienceById(id int) (Experience, error) {
 	row := s.db.QueryRow("SELECT id, userId, title, company, logo, startDate, endDate, isPresent, description, createdAt, updatedAt FROM experiences WHERE id = ?", id)
-
-	var experience Experience
-	err := row.Scan(
-		&experience.ID,
-		&experience.UserID,
-		&experience.Title,
-		&experience.Company,
-		&experience.Logo,
-		&experience.StartDate,
-		&experience.EndDate,
-		&experience.IsPresent,
-		&experience.Description,
-		&experience.CreatedAt,
-		&experience.UpdatedAt,
-	)
-
+	experience, err := scanRowIntoExperience(row)
 	if err != nil {
 		return Experience{}, err
 	}
@@ -58,21 +43,7 @@ func (s *Repository) getExperiences(userID int) ([]Experience, error) {
 	}
 	defer rows.Close()
 
-	experiences := make([]Experience, 0)
-
-	for rows.Next() {
-		exp, err := scanRowIntoExperience(rows)
-		if err != nil {
-			return nil, err
-		}
-		experiences = append(experiences, exp)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return experiences, nil
+	return scanRowsIntoExperience(rows)
 }
 
 func (s *Repository) populateTechs(experiences []Experience) ([]Experience, error) {
@@ -228,10 +199,9 @@ func (s *Repository) GetExperienceTechs(experienceIDs []int) (map[int][]technolo
 	return result, rows.Err()
 }
 
-func scanRowIntoExperience(rows *sql.Rows) (Experience, error) {
+func scanRowIntoExperience(scanner interface{ Scan(dest ...interface{}) error }) (Experience, error) {
 	var experience Experience
-
-	err := rows.Scan(
+	err := scanner.Scan(
 		&experience.ID,
 		&experience.UserID,
 		&experience.Title,
@@ -249,14 +219,24 @@ func scanRowIntoExperience(rows *sql.Rows) (Experience, error) {
 	}
 
 	if experience.Logo != nil && *experience.Logo != "" {
-		isFullURL := strings.HasPrefix(*experience.Logo, "https://") || strings.HasPrefix(*experience.Logo, "http://")
-
-		if !isFullURL {
+		if !strings.HasPrefix(*experience.Logo, "https://") && !strings.HasPrefix(*experience.Logo, "http://") {
 			*experience.Logo = httputil.GetPublicFile(*experience.Logo)
 		}
 	}
 
 	return experience, nil
+}
+
+func scanRowsIntoExperience(rows *sql.Rows) ([]Experience, error) {
+	var experiences []Experience
+	for rows.Next() {
+		exp, err := scanRowIntoExperience(rows)
+		if err != nil {
+			return nil, err
+		}
+		experiences = append(experiences, exp)
+	}
+	return experiences, rows.Err()
 }
 
 func (s *Repository) GetExperienceTechById(id int) (*ExperienceTech, error) {

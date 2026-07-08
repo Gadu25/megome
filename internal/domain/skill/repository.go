@@ -13,28 +13,13 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 func (s *Repository) GetSkillById(id int) (Skill, error) {
-	row := s.db.QueryRow("SELECT * FROM skills WHERE id = ?", id)
-
-	var skill Skill
-	err := row.Scan(
-		&skill.ID,
-		&skill.UserID,
-		&skill.SkillName,
-		&skill.Proficiency,
-		&skill.CreatedAt,
-		&skill.UpdatedAt,
-	)
-
-	if err != nil {
-		return Skill{}, err
-	}
-
-	return skill, nil
+	row := s.db.QueryRow("SELECT id, userId, skillName, proficiency, createdAt, updatedAt FROM skills WHERE id = ?", id)
+	return scanRowIntoSkill(row)
 }
 
 func (s *Repository) GetSkills(userID int) ([]Skill, error) {
 	rows, err := s.db.Query(
-		"SELECT * FROM skills WHERE userId = ?",
+		"SELECT id, userId, skillName, proficiency, createdAt, updatedAt FROM skills WHERE userId = ?",
 		userID,
 	)
 	if err != nil {
@@ -42,21 +27,7 @@ func (s *Repository) GetSkills(userID int) ([]Skill, error) {
 	}
 	defer rows.Close()
 
-	skills := make([]Skill, 0)
-
-	for rows.Next() {
-		skill, err := scanRowIntoSkill(rows)
-		if err != nil {
-			return nil, err
-		}
-		skills = append(skills, skill)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return skills, nil
+	return scanRowsIntoSkill(rows)
 }
 
 func (s *Repository) CreateSkill(skill Skill) (Skill, error) {
@@ -106,10 +77,9 @@ func (s *Repository) DeleteSkill(id int) (Skill, error) {
 	return skill, nil
 }
 
-func scanRowIntoSkill(rows *sql.Rows) (Skill, error) {
+func scanRowIntoSkill(scanner interface{ Scan(dest ...interface{}) error }) (Skill, error) {
 	var skill Skill
-
-	err := rows.Scan(
+	err := scanner.Scan(
 		&skill.ID,
 		&skill.UserID,
 		&skill.SkillName,
@@ -121,4 +91,16 @@ func scanRowIntoSkill(rows *sql.Rows) (Skill, error) {
 		return Skill{}, err
 	}
 	return skill, nil
+}
+
+func scanRowsIntoSkill(rows *sql.Rows) ([]Skill, error) {
+	var skills []Skill
+	for rows.Next() {
+		skill, err := scanRowIntoSkill(rows)
+		if err != nil {
+			return nil, err
+		}
+		skills = append(skills, skill)
+	}
+	return skills, rows.Err()
 }

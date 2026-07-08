@@ -15,32 +15,12 @@ func NewRepository(db *sql.DB) *Repository {
 
 func (s *Repository) GetEducationById(id int) (Education, error) {
 	row := s.db.QueryRow("SELECT id, userId, school, description, degree, fieldOfStudy, startDate, endDate, isPresent, createdAt, updatedAt FROM education WHERE id = ?", id)
-
-	var education Education
-	err := row.Scan(
-		&education.ID,
-		&education.UserID,
-		&education.School,
-		&education.Description,
-		&education.Degree,
-		&education.FieldOfStudy,
-		&education.StartDate,
-		&education.EndDate,
-		&education.IsPresent,
-		&education.CreatedAt,
-		&education.UpdatedAt,
-	)
-
-	if err != nil {
-		return Education{}, err
-	}
-
-	return education, nil
+	return scanRowIntoEducation(row)
 }
 
 func (s *Repository) GetEducations(userID int) ([]Education, error) {
 	rows, err := s.db.Query(
-		"SELECT id, school, description, degree, fieldOfStudy, startDate, endDate, isPresent from education WHERE userId = ?",
+		"SELECT id, userId, school, description, degree, fieldOfStudy, startDate, endDate, isPresent, createdAt, updatedAt FROM education WHERE userId = ?",
 		userID,
 	)
 	if err != nil {
@@ -48,16 +28,7 @@ func (s *Repository) GetEducations(userID int) ([]Education, error) {
 	}
 	defer rows.Close()
 
-	educations := make([]Education, 0)
-
-	for rows.Next() {
-		educ, err := scanRowIntoEducation(rows)
-		if err != nil {
-			return nil, err
-		}
-		educations = append(educations, educ)
-	}
-	return educations, nil
+	return scanRowsIntoEducation(rows)
 }
 
 func (s *Repository) CreateEducation(education Education) (Education, error) {
@@ -116,11 +87,11 @@ func (s *Repository) DeleteEducation(id int) (Education, error) {
 	return cert, nil
 }
 
-func scanRowIntoEducation(rows *sql.Rows) (Education, error) {
+func scanRowIntoEducation(scanner interface{ Scan(dest ...interface{}) error }) (Education, error) {
 	var education Education
-
-	err := rows.Scan(
+	err := scanner.Scan(
 		&education.ID,
+		&education.UserID,
 		&education.School,
 		&education.Description,
 		&education.Degree,
@@ -128,10 +99,23 @@ func scanRowIntoEducation(rows *sql.Rows) (Education, error) {
 		&education.StartDate,
 		&education.EndDate,
 		&education.IsPresent,
+		&education.CreatedAt,
+		&education.UpdatedAt,
 	)
 	if err != nil {
 		return Education{}, err
 	}
-
 	return education, nil
+}
+
+func scanRowsIntoEducation(rows *sql.Rows) ([]Education, error) {
+	var educations []Education
+	for rows.Next() {
+		educ, err := scanRowIntoEducation(rows)
+		if err != nil {
+			return nil, err
+		}
+		educations = append(educations, educ)
+	}
+	return educations, rows.Err()
 }

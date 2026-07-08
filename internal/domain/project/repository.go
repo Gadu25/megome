@@ -60,16 +60,13 @@ func (s *Repository) GetProjects(userId int) ([]Project, error) {
 	defer rows.Close()
 
 	var projects []Project
-
 	for rows.Next() {
-		project, err := scanProjectRows(rows)
+		project, err := scanProject(rows)
 		if err != nil {
 			return nil, err
 		}
-
 		projects = append(projects, project)
 	}
-
 	return projects, rows.Err()
 }
 
@@ -327,28 +324,9 @@ func scanProject(scanner interface {
 	return project, err
 }
 
-func scanProjectRows(rows *sql.Rows) (Project, error) {
-	var project Project
-
-	err := rows.Scan(
-		&project.ID,
-		&project.Title,
-		&project.Description,
-		&project.Link,
-		&project.GithubLink,
-		&project.Status,
-		&project.IsDraft,
-		&project.CreatedAt,
-		&project.UpdatedAt,
-	)
-
-	return project, err
-}
-
-func scanProjectImage(rows *sql.Rows) (ProjectImage, error) {
+func scanProjectImage(scanner interface{ Scan(dest ...interface{}) error }) (ProjectImage, error) {
 	var image ProjectImage
-
-	err := rows.Scan(
+	err := scanner.Scan(
 		&image.ID,
 		&image.ProjectID,
 		&image.URL,
@@ -357,7 +335,6 @@ func scanProjectImage(rows *sql.Rows) (ProjectImage, error) {
 		&image.CreatedAt,
 		&image.UpdatedAt,
 	)
-
 	return image, err
 }
 
@@ -382,11 +359,18 @@ func scanTechnology(rows *sql.Rows) (int, technology.Technology, error) {
 	return projectID, tech, err
 }
 
+func prefixImageURL(url string) string {
+	if url == "" || strings.HasPrefix(url, "https://") || strings.HasPrefix(url, "http://") {
+		return url
+	}
+	return httputil.GetPublicFile(url)
+}
+
 func mapImages(images []ProjectImage) ProjectImages {
 	var result ProjectImages
 
 	for _, img := range images {
-		publicURL := httputil.GetPublicFile(img.URL)
+		publicURL := prefixImageURL(img.URL)
 
 		switch img.Type {
 		case "cover":
@@ -406,22 +390,7 @@ func (s *Repository) GetProjectImageByID(id int) (ProjectImage, error) {
 		FROM project_images
 		WHERE id = ?
 	`, id)
-
-	var img ProjectImage
-	err := row.Scan(
-		&img.ID,
-		&img.ProjectID,
-		&img.URL,
-		&img.Type,
-		&img.Position,
-		&img.CreatedAt,
-		&img.UpdatedAt,
-	)
-	if err != nil {
-		return ProjectImage{}, err
-	}
-
-	return img, nil
+	return scanProjectImage(row)
 }
 
 func (s *Repository) GetProjectImagesByProjectID(projectId int) ([]ProjectImage, error) {
@@ -442,30 +411,15 @@ func (s *Repository) GetProjectImagesByProjectID(projectId int) ([]ProjectImage,
 	}
 	defer rows.Close()
 
-	images := []ProjectImage{}
-
+	var images []ProjectImage
 	for rows.Next() {
-		var img ProjectImage
-		err := rows.Scan(
-			&img.ID,
-			&img.ProjectID,
-			&img.URL,
-			&img.Type,
-			&img.Position,
-			&img.CreatedAt,
-			&img.UpdatedAt,
-		)
+		img, err := scanProjectImage(rows)
 		if err != nil {
 			return nil, err
 		}
 		images = append(images, img)
 	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return images, nil
+	return images, rows.Err()
 }
 
 func (s *Repository) AddProjectImage(img ProjectImage) (ProjectImage, error) {
@@ -613,7 +567,7 @@ func (s *Repository) CreateProjectTechBatch(projectID int, techIDs []int) error 
 	return nil
 }
 
-func (s *Repository) DelteProjectTech(id int) error {
+func (s *Repository) DeleteProjectTech(id int) error {
 	_, err := s.GetProjectTechById(id)
 	if err != nil {
 		return err

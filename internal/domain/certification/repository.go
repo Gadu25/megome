@@ -15,38 +15,13 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 func (s *Repository) GetCertificationById(id int) (Certification, error) {
-	row := s.db.QueryRow("SELECT id, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl FROM certifications WHERE id = ?", id)
-
-	var certification Certification
-	err := row.Scan(
-		&certification.ID,
-		&certification.Title,
-		&certification.Issuer,
-		&certification.IssueDate,
-		&certification.CertificateImage,
-		&certification.ExpirationDate,
-		&certification.CredentialId,
-		&certification.CredentialUrl,
-	)
-
-	if err != nil {
-		return Certification{}, err
-	}
-
-	if certification.CertificateImage != nil && *certification.CertificateImage != "" {
-		isFullURL := strings.HasPrefix(*certification.CertificateImage, "https://") || strings.HasPrefix(*certification.CertificateImage, "http://")
-
-		if !isFullURL {
-			*certification.CertificateImage = httputil.GetPublicFile(*certification.CertificateImage)
-		}
-	}
-
-	return certification, nil
+	row := s.db.QueryRow("SELECT id, userId, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl, createdAt, updatedAt FROM certifications WHERE id = ?", id)
+	return scanRowIntoCertification(row)
 }
 
 func (s *Repository) GetCertifications(userId int) ([]Certification, error) {
 	rows, err := s.db.Query(
-		"SELECT id, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl FROM certifications WHERE userId = ?",
+		"SELECT id, userId, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl, createdAt, updatedAt FROM certifications WHERE userId = ?",
 		userId,
 	)
 	if err != nil {
@@ -54,16 +29,7 @@ func (s *Repository) GetCertifications(userId int) ([]Certification, error) {
 	}
 	defer rows.Close()
 
-	certifications := make([]Certification, 0)
-
-	for rows.Next() {
-		cert, err := scanRowIntoCertification(rows)
-		if err != nil {
-			return nil, err
-		}
-		certifications = append(certifications, cert)
-	}
-	return certifications, nil
+	return scanRowsIntoCertification(rows)
 }
 
 func (s *Repository) CreateCertification(certification Certification) (Certification, error) {
@@ -123,11 +89,11 @@ func (s *Repository) DeleteCertification(id int) (Certification, error) {
 	return cert, nil
 }
 
-func scanRowIntoCertification(rows *sql.Rows) (Certification, error) {
+func scanRowIntoCertification(scanner interface{ Scan(dest ...interface{}) error }) (Certification, error) {
 	var certification Certification
-
-	err := rows.Scan(
+	err := scanner.Scan(
 		&certification.ID,
+		&certification.UserID,
 		&certification.Title,
 		&certification.Issuer,
 		&certification.IssueDate,
@@ -135,18 +101,30 @@ func scanRowIntoCertification(rows *sql.Rows) (Certification, error) {
 		&certification.ExpirationDate,
 		&certification.CredentialId,
 		&certification.CredentialUrl,
+		&certification.CreatedAt,
+		&certification.UpdatedAt,
 	)
 	if err != nil {
 		return Certification{}, err
 	}
 
 	if certification.CertificateImage != nil && *certification.CertificateImage != "" {
-		isFullURL := strings.HasPrefix(*certification.CertificateImage, "https://") || strings.HasPrefix(*certification.CertificateImage, "http://")
-
-		if !isFullURL {
+		if !strings.HasPrefix(*certification.CertificateImage, "https://") && !strings.HasPrefix(*certification.CertificateImage, "http://") {
 			*certification.CertificateImage = httputil.GetPublicFile(*certification.CertificateImage)
 		}
 	}
 
 	return certification, nil
+}
+
+func scanRowsIntoCertification(rows *sql.Rows) ([]Certification, error) {
+	var certifications []Certification
+	for rows.Next() {
+		cert, err := scanRowIntoCertification(rows)
+		if err != nil {
+			return nil, err
+		}
+		certifications = append(certifications, cert)
+	}
+	return certifications, rows.Err()
 }

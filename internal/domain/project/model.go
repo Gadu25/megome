@@ -66,7 +66,7 @@ type ProjectImage struct {
 type ProjectTechStore interface {
 	CreateProjectTech(ProjectTech) error
 	CreateProjectTechBatch(int, []int) error
-	DelteProjectTech(int) error
+	DeleteProjectTech(int) error
 }
 
 type ProjectTech struct {

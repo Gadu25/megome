@@ -116,7 +116,7 @@ func (h *ProjectTechHandler) handleDeleteProjectTech(w http.ResponseWriter, r *h
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	err = h.projectStore.DelteProjectTech(id)
+	err = h.projectStore.DeleteProjectTech(id)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return

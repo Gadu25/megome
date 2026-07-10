@@ -2,13 +2,7 @@ package profile
 
 import (
 	"database/sql"
-<<<<<<< HEAD:internal/domain/profile/repository.go
 	"megome/internal/pkg/httputil"
-=======
-	"fmt"
-	"megome/internal/services/types"
-	"megome/internal/services/utils"
->>>>>>> 24a47b6 (fix: issue on public profile api):internal/services/profile/store.go
 	"strings"
 )
 
@@ -20,16 +14,7 @@ func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }
 
-<<<<<<< HEAD:internal/domain/profile/repository.go
 func (s *Repository) GetProfile(userId int) (*Profile, error) {
-=======
-func (s *Store) GetPublicProfile(userId int) (*types.Profile, error) {
-	row := s.db.QueryRow("SELECT id, userId, tagline, bio, firstname, lastname, title, birthday, phone, website, location, profileImage, createdAt, updatedAt FROM profiles WHERE userId = ? LIMIT 1", userId)
-	return scanRowIntoProfile(row)
-}
-
-func (s *Store) GetProfile(userId int) (*types.Profile, error) {
->>>>>>> 24a47b6 (fix: issue on public profile api):internal/services/profile/store.go
 	row := s.db.QueryRow("SELECT id, userId, tagline, bio, firstname, lastname, title, birthday, phone, website, location, profileImage, createdAt, updatedAt FROM profiles WHERE userId = ? LIMIT 1", userId)
 	p, err := scanRowIntoProfile(row)
 	if err == sql.ErrNoRows {

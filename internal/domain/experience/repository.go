@@ -277,6 +277,19 @@ func (s *Repository) CreateExperienceTechBatch(experienceID int, techIDs []int) 
 		}
 	}()
 
+	_, err = tx.Exec(`DELETE FROM experience_techs WHERE experienceId = ?`, experienceID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if len(techIDs) == 0 {
+		if err = tx.Commit(); err != nil {
+			return err
+		}
+		return nil
+	}
+
 	stmt, err := tx.Prepare(`INSERT INTO experience_techs (experienceId, techId) VALUES (?, ?)`)
 	if err != nil {
 		tx.Rollback()

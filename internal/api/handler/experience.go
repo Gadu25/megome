@@ -181,10 +181,18 @@ func (h *ExperienceHandler) handleEditExperience(w http.ResponseWriter, r *http.
 		_ = h.r2Client.DeleteObject(r.Context(), *existing.Logo)
 	}
 
+	finalLogo := logoKey
+	if finalLogo == nil && existing.Logo != nil {
+		key := httputil.ExtractR2Key(*existing.Logo)
+		if key != "" {
+			finalLogo = &key
+		}
+	}
+
 	exp, err := h.experienceStore.UpdateExperience(id, experience.Experience{
 		Title:       payload.Title,
 		Company:     payload.Company,
-		Logo:        logoKey,
+		Logo:        finalLogo,
 		StartDate:   payload.StartDate,
 		EndDate:     payload.EndDate,
 		IsPresent:   payload.IsPresent,

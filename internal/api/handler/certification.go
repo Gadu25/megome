@@ -168,11 +168,19 @@ func (h *CertificationHandler) handleEditCertification(w http.ResponseWriter, r 
 		_ = h.r2Client.DeleteObject(r.Context(), *existing.CertificateImage)
 	}
 
+	finalImage := certificateImageKey
+	if finalImage == nil && existing.CertificateImage != nil {
+		key := httputil.ExtractR2Key(*existing.CertificateImage)
+		if key != "" {
+			finalImage = &key
+		}
+	}
+
 	cert, err := h.certificationStore.UpdateCertification(id, certification.Certification{
 		Title:            payload.Title,
 		Issuer:           payload.Issuer,
 		IssueDate:        payload.IssueDate,
-		CertificateImage: certificateImageKey,
+		CertificateImage: finalImage,
 		ExpirationDate:   payload.ExpirationDate,
 		CredentialId:     payload.CredentialId,
 		CredentialUrl:    payload.CredentialUrl,

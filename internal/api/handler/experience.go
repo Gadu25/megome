@@ -38,6 +38,7 @@ func NewExperienceHandler(experienceStore *experience.Repository, userStore *use
 
 func (h *ExperienceHandler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/experience", middleware.WithJWTAuth(h.handleViewExperiences, h.userStore)).Methods("GET")
+	router.HandleFunc("/experience/{id}", middleware.WithJWTAuth(h.handleViewExperienceById, h.userStore)).Methods("GET")
 	router.HandleFunc("/experience", middleware.WithJWTAuth(h.handleCreateExperience, h.userStore)).Methods("POST")
 	router.HandleFunc("/experience/{id}", middleware.WithJWTAuth(h.handleEditExperience, h.userStore)).Methods("PUT")
 	router.HandleFunc("/experience/{id}", middleware.WithJWTAuth(h.handleDeleteExperience, h.userStore)).Methods("DELETE")
@@ -82,6 +83,26 @@ func (h *ExperienceHandler) uploadLogo(r *http.Request) (*string, error) {
 	}
 
 	return &key, nil
+}
+
+func (h *ExperienceHandler) handleViewExperienceById(w http.ResponseWriter, r *http.Request) {
+	id, err := httputil.GetRequestId(r)
+	if err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	exp, err := h.experienceStore.GetExperienceById(id)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	resp := SingleExpResponse{
+		Message:    "Experience fetched successfully",
+		Experience: exp,
+	}
+	httputil.WriteJSON(w, http.StatusOK, resp)
 }
 
 func (h *ExperienceHandler) handleCreateExperience(w http.ResponseWriter, r *http.Request) {

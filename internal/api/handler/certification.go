@@ -37,6 +37,7 @@ func NewCertificationHandler(certificationStore *certification.Repository, userS
 
 func (h *CertificationHandler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/certification", middleware.WithJWTAuth(h.handleViewCertification, h.userStore)).Methods("GET")
+	router.HandleFunc("/certification/{id}", middleware.WithJWTAuth(h.handleViewCertificationById, h.userStore)).Methods("GET")
 	router.HandleFunc("/certification", middleware.WithJWTAuth(h.handleCreateCertification, h.userStore)).Methods("POST")
 	router.HandleFunc("/certification/{id}", middleware.WithJWTAuth(h.handleEditCertification, h.userStore)).Methods("PUT")
 	router.HandleFunc("/certification/{id}", middleware.WithJWTAuth(h.handleDeleteCertification, h.userStore)).Methods("DELETE")
@@ -79,6 +80,26 @@ func (h *CertificationHandler) handleViewCertification(w http.ResponseWriter, r 
 	resp := CertificationResponse{
 		Message:      "Certification fetched successfully",
 		Certificates: certifications,
+	}
+	httputil.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *CertificationHandler) handleViewCertificationById(w http.ResponseWriter, r *http.Request) {
+	id, err := httputil.GetRequestId(r)
+	if err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	cert, err := h.certificationStore.GetCertificationById(id)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	resp := SingleCertResponse{
+		Message:     "Certification fetched successfully",
+		Certificate: cert,
 	}
 	httputil.WriteJSON(w, http.StatusOK, resp)
 }

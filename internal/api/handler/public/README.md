@@ -1,0 +1,1 @@
+This directory contains public (unauthenticated) HTTP handlers for read-only endpoints. These expose profile, project, skill, experience, education, and certification data without requiring authentication.

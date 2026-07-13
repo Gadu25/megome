@@ -1,0 +1,1 @@
+This directory contains the API server entry point (`main.go`). It loads configuration, connects to the database, and starts the HTTP server by calling `api.NewAPIServer`. Run this to serve the application.

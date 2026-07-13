@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
-	"megome/config"
-	"megome/internal/data/db"
-	"megome/internal/data/seeders"
+	"megome/internal/config"
+	"megome/internal/db"
+	"megome/internal/db/seeders"
 
 	mysqlCfg "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"

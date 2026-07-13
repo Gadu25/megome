@@ -1,0 +1,1 @@
+This directory runs database migrations using `golang-migrate`. It reads migration files from `cmd/migrate/migrations` and applies them up or down based on the command-line argument. Run with `go run . up` or `go run . down`.

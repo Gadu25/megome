@@ -1,0 +1,1 @@
+This directory sets up the MySQL database connection. It provides `NewMySQLStorage` which returns a `*sql.DB` configured with the provided `mysql.Config`, and is used by the API, migration, and seed entry points.

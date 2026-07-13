@@ -1,0 +1,1 @@
+This directory contains HTTP handler functions for the API. Each file corresponds to a domain resource (user, project, technology, etc.) and implements the request parsing, business logic calls, and response writing for its endpoints.

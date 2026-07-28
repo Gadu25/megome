@@ -18,8 +18,14 @@ type Certification struct {
 	ExpirationDate   *string `json:"expirationDate"`
 	CredentialId     *string `json:"credentialId"`
 	CredentialUrl    *string `json:"credentialUrl"`
+	DisplayOrder     int     `json:"displayOrder"`
 	CreatedAt        string  `json:"createdAt"`
 	UpdatedAt        string  `json:"updatedAt"`
+}
+
+type ReorderItem struct {
+	ID           int `json:"id"`
+	DisplayOrder int `json:"displayOrder"`
 }
 
 type CertificationPayload struct {

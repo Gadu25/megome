@@ -1,0 +1,1 @@
+ALTER TABLE certifications ADD COLUMN displayOrder INT UNSIGNED NOT NULL DEFAULT 0;

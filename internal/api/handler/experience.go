@@ -38,6 +38,7 @@ func NewExperienceHandler(experienceStore *experience.Repository, userStore *use
 
 func (h *ExperienceHandler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/experience", middleware.WithJWTAuth(h.handleViewExperiences, h.userStore)).Methods("GET")
+	router.HandleFunc("/experience/reorder", middleware.WithJWTAuth(h.handleReorderExperiences, h.userStore)).Methods("POST")
 	router.HandleFunc("/experience/{id}", middleware.WithJWTAuth(h.handleViewExperienceById, h.userStore)).Methods("GET")
 	router.HandleFunc("/experience", middleware.WithJWTAuth(h.handleCreateExperience, h.userStore)).Methods("POST")
 	router.HandleFunc("/experience/{id}", middleware.WithJWTAuth(h.handleEditExperience, h.userStore)).Methods("PUT")
@@ -248,4 +249,28 @@ func (h *ExperienceHandler) handleDeleteExperience(w http.ResponseWriter, r *htt
 		Experience: exp,
 	}
 	httputil.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *ExperienceHandler) handleReorderExperiences(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		Items []experience.ReorderItem `json:"items"`
+	}
+	if err := httputil.ParseJSON(r, &payload); err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if len(payload.Items) == 0 {
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("items list cannot be empty"))
+		return
+	}
+
+	userID := middleware.GetUserIDFromContext(r.Context())
+
+	if err := h.experienceStore.ReorderExperiences(userID, payload.Items); err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"message": "Experiences reordered successfully"})
 }

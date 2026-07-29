@@ -31,9 +31,14 @@ type ReorderItem struct {
 	DisplayOrder int `json:"displayOrder"`
 }
 
+type ScreenshotInfo struct {
+	ID  int    `json:"id"`
+	URL string `json:"url"`
+}
+
 type ProjectImages struct {
-	Cover       *string  `json:"cover"`
-	Screenshots []string `json:"screenshots"`
+	Cover       *string         `json:"cover"`
+	Screenshots []ScreenshotInfo `json:"screenshots"`
 }
 
 type ProjectFull struct {

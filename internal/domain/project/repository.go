@@ -165,8 +165,8 @@ func (s *Repository) DeleteProject(id int) (ProjectFull, error) {
 
 	ctx := context.Background()
 
-	for _, url := range project.Images.Screenshots {
-		key := httputil.ExtractR2Key(url)
+	for _, shot := range project.Images.Screenshots {
+		key := httputil.ExtractR2Key(shot.URL)
 		err = s.storage.DeleteObject(ctx, key)
 		if err != nil {
 			return ProjectFull{}, err
@@ -379,7 +379,10 @@ func mapImages(images []ProjectImage) ProjectImages {
 			result.Cover = &publicURL
 
 		case "screenshot":
-			result.Screenshots = append(result.Screenshots, publicURL)
+			result.Screenshots = append(result.Screenshots, ScreenshotInfo{
+				ID:  img.ID,
+				URL: publicURL,
+			})
 		}
 	}
 
@@ -545,6 +548,19 @@ func (s *Repository) CreateProjectTechBatch(projectID int, techIDs []int) error 
 			tx.Rollback()
 		}
 	}()
+
+	_, err = tx.Exec(`DELETE FROM project_techs WHERE projectId = ?`, projectID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if len(techIDs) == 0 {
+		if err = tx.Commit(); err != nil {
+			return err
+		}
+		return nil
+	}
 
 	stmt, err := tx.Prepare(`INSERT INTO project_techs (projectId, techId) VALUES (?, ?)`)
 	if err != nil {

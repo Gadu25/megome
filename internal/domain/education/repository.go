@@ -14,13 +14,13 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 func (s *Repository) GetEducationById(id int) (Education, error) {
-	row := s.db.QueryRow("SELECT id, userId, school, description, degree, fieldOfStudy, startDate, endDate, isPresent, createdAt, updatedAt FROM education WHERE id = ?", id)
+	row := s.db.QueryRow("SELECT id, userId, school, description, degree, fieldOfStudy, startDate, endDate, isPresent, displayOrder, createdAt, updatedAt FROM education WHERE id = ?", id)
 	return scanRowIntoEducation(row)
 }
 
 func (s *Repository) GetEducations(userID int) ([]Education, error) {
 	rows, err := s.db.Query(
-		"SELECT id, userId, school, description, degree, fieldOfStudy, startDate, endDate, isPresent, createdAt, updatedAt FROM education WHERE userId = ?",
+		"SELECT id, userId, school, description, degree, fieldOfStudy, startDate, endDate, isPresent, displayOrder, createdAt, updatedAt FROM education WHERE userId = ?",
 		userID,
 	)
 	if err != nil {
@@ -99,6 +99,7 @@ func scanRowIntoEducation(scanner interface{ Scan(dest ...interface{}) error }) 
 		&education.StartDate,
 		&education.EndDate,
 		&education.IsPresent,
+		&education.DisplayOrder,
 		&education.CreatedAt,
 		&education.UpdatedAt,
 	)
@@ -106,6 +107,29 @@ func scanRowIntoEducation(scanner interface{ Scan(dest ...interface{}) error }) 
 		return Education{}, err
 	}
 	return education, nil
+}
+
+func (s *Repository) ReorderEducations(userID int, items []ReorderItem) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare("UPDATE education SET displayOrder = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ? AND userId = ?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, item := range items {
+		_, err = stmt.Exec(item.DisplayOrder, item.ID, userID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func scanRowsIntoEducation(rows *sql.Rows) ([]Education, error) {

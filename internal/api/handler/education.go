@@ -34,6 +34,7 @@ func NewEducationHandler(educationStore *education.Repository, userStore *user.R
 
 func (h *EducationHandler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/education", middleware.WithJWTAuth(h.handleViewEducation, h.userStore)).Methods("GET")
+	router.HandleFunc("/education/reorder", middleware.WithJWTAuth(h.handleReorderEducation, h.userStore)).Methods("POST")
 	router.HandleFunc("/education", middleware.WithJWTAuth(h.handleCreateEducation, h.userStore)).Methods("POST")
 	router.HandleFunc("/education/{id}", middleware.WithJWTAuth(h.handleEditEducation, h.userStore)).Methods("PUT")
 	router.HandleFunc("/education/{id}", middleware.WithJWTAuth(h.handleDeleteEducation, h.userStore)).Methods("DELETE")
@@ -127,6 +128,30 @@ func (h *EducationHandler) handleEditEducation(w http.ResponseWriter, r *http.Re
 		Education: educ,
 	}
 	httputil.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *EducationHandler) handleReorderEducation(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		Items []education.ReorderItem `json:"items"`
+	}
+	if err := httputil.ParseJSON(r, &payload); err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if len(payload.Items) == 0 {
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("items list cannot be empty"))
+		return
+	}
+
+	userID := middleware.GetUserIDFromContext(r.Context())
+
+	if err := h.educationStore.ReorderEducations(userID, payload.Items); err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"message": "Education reordered successfully"})
 }
 
 func (h *EducationHandler) handleDeleteEducation(w http.ResponseWriter, r *http.Request) {

@@ -53,6 +53,7 @@ func (s *Repository) GetProjects(userId int) ([]Project, error) {
 		SELECT id, title, description, link, githubLink, status, isDraft, displayOrder, createdAt, updatedAt
 		FROM projects
 		WHERE userId = ?
+		ORDER BY displayOrder ASC, id ASC
 	`, userId)
 	if err != nil {
 		return nil, err

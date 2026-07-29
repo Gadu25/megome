@@ -20,7 +20,7 @@ func (s *Repository) GetEducationById(id int) (Education, error) {
 
 func (s *Repository) GetEducations(userID int) ([]Education, error) {
 	rows, err := s.db.Query(
-		"SELECT id, userId, school, description, degree, fieldOfStudy, startDate, endDate, isPresent, displayOrder, createdAt, updatedAt FROM education WHERE userId = ?",
+		"SELECT id, userId, school, description, degree, fieldOfStudy, startDate, endDate, isPresent, displayOrder, createdAt, updatedAt FROM education WHERE userId = ? ORDER BY displayOrder ASC, id ASC",
 		userID,
 	)
 	if err != nil {

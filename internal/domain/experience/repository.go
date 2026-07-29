@@ -35,7 +35,7 @@ func (s *Repository) GetExperienceById(id int) (Experience, error) {
 
 func (s *Repository) getExperiences(userID int) ([]Experience, error) {
 	rows, err := s.db.Query(
-		"SELECT id, userId, title, company, logo, startDate, endDate, isPresent, description, displayOrder, createdAt, updatedAt FROM experiences WHERE userId = ?",
+		"SELECT id, userId, title, company, logo, startDate, endDate, isPresent, description, displayOrder, createdAt, updatedAt FROM experiences WHERE userId = ? ORDER BY displayOrder ASC, id ASC",
 		userID,
 	)
 	if err != nil {

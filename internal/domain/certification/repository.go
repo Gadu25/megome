@@ -21,7 +21,7 @@ func (s *Repository) GetCertificationById(id int) (Certification, error) {
 
 func (s *Repository) GetCertifications(userId int) ([]Certification, error) {
 	rows, err := s.db.Query(
-		"SELECT id, userId, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl, displayOrder, createdAt, updatedAt FROM certifications WHERE userId = ?",
+		"SELECT id, userId, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl, displayOrder, createdAt, updatedAt FROM certifications WHERE userId = ? ORDER BY displayOrder ASC, id ASC",
 		userId,
 	)
 	if err != nil {

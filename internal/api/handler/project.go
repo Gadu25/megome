@@ -39,10 +39,35 @@ func NewProjectHandler(projectStore *project.Repository, userStore *user.Reposit
 
 func (h *ProjectHandler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/project", middleware.WithJWTAuth(h.handleViewProjects, h.userStore)).Methods("GET")
+	router.HandleFunc("/project/reorder", middleware.WithJWTAuth(h.handleReorderProjects, h.userStore)).Methods("POST")
 	router.HandleFunc("/project/{id}", middleware.WithJWTAuth(h.handleViewProject, h.userStore)).Methods("GET")
 	router.HandleFunc("/project", middleware.WithJWTAuth(h.handleCreateProject, h.userStore)).Methods("POST")
 	router.HandleFunc("/project/{id}", middleware.WithJWTAuth(h.handleUpdateProject, h.userStore)).Methods("PUT")
 	router.HandleFunc("/project/{id}", middleware.WithJWTAuth(h.handleDeleteProject, h.userStore)).Methods("DELETE")
+}
+
+func (h *ProjectHandler) handleReorderProjects(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		Items []project.ReorderItem `json:"items"`
+	}
+	if err := httputil.ParseJSON(r, &payload); err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if len(payload.Items) == 0 {
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("items list cannot be empty"))
+		return
+	}
+
+	userID := middleware.GetUserIDFromContext(r.Context())
+
+	if err := h.projectStore.ReorderProjects(userID, payload.Items); err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"message": "Projects reordered successfully"})
 }
 
 func (h *ProjectHandler) handleViewProject(w http.ResponseWriter, r *http.Request) {

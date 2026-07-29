@@ -8,21 +8,28 @@ type ExperienceStore interface {
 	CreateExperience(Experience) (Experience, error)
 	UpdateExperience(id int, Experience Experience) (Experience, error)
 	DeleteExperience(id int) (Experience, error)
+	ReorderExperiences(userID int, items []ReorderItem) error
 }
 
 type Experience struct {
-	ID           int                  `json:"id"`
-	UserID       int                  `json:"userId"`
-	Title        string               `json:"title"`
-	Company      string               `json:"company"`
-	Logo         *string              `json:"logo"`
-	StartDate    string               `json:"startDate"`
-	EndDate      *string              `json:"endDate"`
-	IsPresent    bool                 `json:"isPresent"`
-	Description  string               `json:"description"`
-	Technologies []technology.Technology `json:"technologies"`
-	CreatedAt    string               `json:"createdAt"`
-	UpdatedAt    string               `json:"updatedAt"`
+	ID           int                      `json:"id"`
+	UserID       int                      `json:"userId"`
+	Title        string                   `json:"title"`
+	Company      string                   `json:"company"`
+	Logo         *string                  `json:"logo"`
+	StartDate    string                   `json:"startDate"`
+	EndDate      *string                  `json:"endDate"`
+	IsPresent    bool                     `json:"isPresent"`
+	Description  string                   `json:"description"`
+	Technologies []technology.Technology  `json:"technologies"`
+	DisplayOrder int                      `json:"displayOrder"`
+	CreatedAt    string                   `json:"createdAt"`
+	UpdatedAt    string                   `json:"updatedAt"`
+}
+
+type ReorderItem struct {
+	ID           int `json:"id"`
+	DisplayOrder int `json:"displayOrder"`
 }
 
 type ExperiencePayload struct {

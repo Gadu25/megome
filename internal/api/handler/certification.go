@@ -37,6 +37,7 @@ func NewCertificationHandler(certificationStore *certification.Repository, userS
 
 func (h *CertificationHandler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/certification", middleware.WithJWTAuth(h.handleViewCertification, h.userStore)).Methods("GET")
+	router.HandleFunc("/certification/reorder", middleware.WithJWTAuth(h.handleReorderCertifications, h.userStore)).Methods("POST")
 	router.HandleFunc("/certification/{id}", middleware.WithJWTAuth(h.handleViewCertificationById, h.userStore)).Methods("GET")
 	router.HandleFunc("/certification", middleware.WithJWTAuth(h.handleCreateCertification, h.userStore)).Methods("POST")
 	router.HandleFunc("/certification/{id}", middleware.WithJWTAuth(h.handleEditCertification, h.userStore)).Methods("PUT")
@@ -241,4 +242,37 @@ func (h *CertificationHandler) handleDeleteCertification(w http.ResponseWriter, 
 		Certificate: cert,
 	}
 	httputil.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *CertificationHandler) handleReorderCertifications(w http.ResponseWriter, r *http.Request) {
+	var payload struct {
+		Items []certification.ReorderItem `json:"items"`
+	}
+	if err := httputil.ParseJSON(r, &payload); err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if len(payload.Items) == 0 {
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("items list cannot be empty"))
+		return
+	}
+
+	seen := make(map[int]bool, len(payload.Items))
+	for _, item := range payload.Items {
+		if seen[item.ID] {
+			httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("duplicate item id: %d", item.ID))
+			return
+		}
+		seen[item.ID] = true
+	}
+
+	userID := middleware.GetUserIDFromContext(r.Context())
+
+	if err := h.certificationStore.ReorderCertifications(userID, payload.Items); err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{"message": "Certifications reordered successfully"})
 }

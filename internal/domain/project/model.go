@@ -9,19 +9,26 @@ type ProjectStore interface {
 	CreateProject(Project) (ProjectFull, error)
 	UpdateProject(int, Project) (ProjectFull, error)
 	DeleteProject(int) (ProjectFull, error)
+	ReorderProjects(int, []ReorderItem) error
 }
 
 type Project struct {
-	ID          int     `json:"id"`
-	UserID      int     `json:"userId"`
-	Title       string  `json:"title"`
-	Description string  `json:"description"`
-	Link        string  `json:"link"`
-	GithubLink  string  `json:"githubLink"`
-	Status      string  `json:"status"`
-	IsDraft     bool    `json:"isDraft"`
-	CreatedAt   string  `json:"createdAt"`
-	UpdatedAt   *string `json:"updatedAt"`
+	ID           int     `json:"id"`
+	UserID       int     `json:"userId"`
+	Title        string  `json:"title"`
+	Description  string  `json:"description"`
+	Link         string  `json:"link"`
+	GithubLink   string  `json:"githubLink"`
+	Status       string  `json:"status"`
+	IsDraft      bool    `json:"isDraft"`
+	DisplayOrder int     `json:"displayOrder"`
+	CreatedAt    string  `json:"createdAt"`
+	UpdatedAt    *string `json:"updatedAt"`
+}
+
+type ReorderItem struct {
+	ID           int `json:"id"`
+	DisplayOrder int `json:"displayOrder"`
 }
 
 type ProjectImages struct {

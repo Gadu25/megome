@@ -21,7 +21,7 @@ func NewRepository(db *sql.DB, storage *storage.R2Client) *Repository {
 
 func (s *Repository) GetProjectById(id int) (ProjectFull, error) {
 	row := s.db.QueryRow(`
-		SELECT id, title, description, link, githubLink, status, isDraft, createdAt, updatedAt
+		SELECT id, title, description, link, githubLink, status, isDraft, displayOrder, createdAt, updatedAt
 		FROM projects
 		WHERE id = ?
 	`, id)
@@ -50,9 +50,10 @@ func (s *Repository) GetProjectById(id int) (ProjectFull, error) {
 
 func (s *Repository) GetProjects(userId int) ([]Project, error) {
 	rows, err := s.db.Query(`
-		SELECT id, title, description, link, githubLink, status, isDraft, createdAt, updatedAt
+		SELECT id, title, description, link, githubLink, status, isDraft, displayOrder, createdAt, updatedAt
 		FROM projects
 		WHERE userId = ?
+		ORDER BY displayOrder ASC, id ASC
 	`, userId)
 	if err != nil {
 		return nil, err
@@ -317,6 +318,7 @@ func scanProject(scanner interface {
 		&project.GithubLink,
 		&project.Status,
 		&project.IsDraft,
+		&project.DisplayOrder,
 		&project.CreatedAt,
 		&project.UpdatedAt,
 	)
@@ -580,4 +582,27 @@ func (s *Repository) DeleteProjectTech(id int) error {
 		return err
 	}
 	return nil
+}
+
+func (s *Repository) ReorderProjects(userID int, items []ReorderItem) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare("UPDATE projects SET displayOrder = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ? AND userId = ?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, item := range items {
+		_, err = stmt.Exec(item.DisplayOrder, item.ID, userID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }

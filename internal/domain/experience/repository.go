@@ -17,7 +17,7 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 func (s *Repository) GetExperienceById(id int) (Experience, error) {
-	row := s.db.QueryRow("SELECT id, userId, title, company, logo, startDate, endDate, isPresent, description, createdAt, updatedAt FROM experiences WHERE id = ?", id)
+	row := s.db.QueryRow("SELECT id, userId, title, company, logo, startDate, endDate, isPresent, description, displayOrder, createdAt, updatedAt FROM experiences WHERE id = ?", id)
 	experience, err := scanRowIntoExperience(row)
 	if err != nil {
 		return Experience{}, err
@@ -35,7 +35,7 @@ func (s *Repository) GetExperienceById(id int) (Experience, error) {
 
 func (s *Repository) getExperiences(userID int) ([]Experience, error) {
 	rows, err := s.db.Query(
-		"SELECT id, userId, title, company, logo, startDate, endDate, isPresent, description, createdAt, updatedAt FROM experiences WHERE userId = ?",
+		"SELECT id, userId, title, company, logo, startDate, endDate, isPresent, description, displayOrder, createdAt, updatedAt FROM experiences WHERE userId = ? ORDER BY displayOrder ASC, id ASC",
 		userID,
 	)
 	if err != nil {
@@ -211,6 +211,7 @@ func scanRowIntoExperience(scanner interface{ Scan(dest ...interface{}) error })
 		&experience.EndDate,
 		&experience.IsPresent,
 		&experience.Description,
+		&experience.DisplayOrder,
 		&experience.CreatedAt,
 		&experience.UpdatedAt,
 	)
@@ -323,4 +324,27 @@ func (s *Repository) DeleteExperienceTech(id int) error {
 		return err
 	}
 	return nil
+}
+
+func (s *Repository) ReorderExperiences(userID int, items []ReorderItem) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.Prepare("UPDATE experiences SET displayOrder = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ? AND userId = ?")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, item := range items {
+		_, err = stmt.Exec(item.DisplayOrder, item.ID, userID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return tx.Commit()
 }

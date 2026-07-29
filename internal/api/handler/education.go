@@ -144,6 +144,15 @@ func (h *EducationHandler) handleReorderEducation(w http.ResponseWriter, r *http
 		return
 	}
 
+	seen := make(map[int]bool, len(payload.Items))
+	for _, item := range payload.Items {
+		if seen[item.ID] {
+			httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("duplicate item id: %d", item.ID))
+			return
+		}
+		seen[item.ID] = true
+	}
+
 	userID := middleware.GetUserIDFromContext(r.Context())
 
 	if err := h.educationStore.ReorderEducations(userID, payload.Items); err != nil {

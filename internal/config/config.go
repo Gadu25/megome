@@ -46,7 +46,7 @@ func initConfig() Config {
 		DBHost:     getEnv("DB_HOST", "127.0.0.1"),
 		DBName:     getEnv("DB_NAME", "megome"),
 		// JWTExpirationInSeconds: getEnvAsInt("JWT_EXP", 60*5),
-		JWTExpirationInSeconds: getEnvAsInt64("JWT_EXP", 60),
+		JWTExpirationInSeconds: getEnvAsInt64("JWT_EXP", 1800),
 		JWTSecret:              getEnv("JWT_SECRET", ""),
 		R2AccountId:            getEnv("R2_ACCOUNT_ID", "4ee86bb26d20c0c74970845960bec979"),
 		R2AccessKeyId:          getEnv("R2_ACCESS_KEY_ID", "783e12a9c12ecd2c966fbbac42225c5d"),

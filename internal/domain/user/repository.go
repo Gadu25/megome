@@ -178,3 +178,23 @@ func (s *Repository) CreateOAuthAccount(
 
 	return err
 }
+
+func (s *Repository) UpdateEmail(id int, email string) error {
+	_, err := s.db.Exec("UPDATE users SET email = ? WHERE id = ?", email, id)
+	return err
+}
+
+func (s *Repository) UpdateUsername(id int, username string) error {
+	_, err := s.db.Exec("UPDATE users SET username = ? WHERE id = ?", username, id)
+	return err
+}
+
+func (s *Repository) UpdatePassword(id int, hashedPassword string) error {
+	_, err := s.db.Exec("UPDATE users SET password = ? WHERE id = ?", hashedPassword, id)
+	return err
+}
+
+func (s *Repository) DeleteAccount(id int) error {
+	_, err := s.db.Exec("DELETE FROM users WHERE id = ?", id)
+	return err
+}

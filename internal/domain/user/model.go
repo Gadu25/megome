@@ -49,6 +49,24 @@ type OAuthAccount struct {
 	UpdatedAt      time.Time
 }
 
+type ChangeEmailPayload struct {
+	Email           string `json:"email" validate:"required,email"`
+	CurrentPassword string `json:"currentPassword" validate:"required"`
+}
+
+type ChangeUsernamePayload struct {
+	Username string `json:"username" validate:"required,min=3,max=30"`
+}
+
+type ChangePasswordPayload struct {
+	CurrentPassword string `json:"currentPassword" validate:"required"`
+	NewPassword     string `json:"newPassword" validate:"required,min=8,max=130"`
+}
+
+type DeleteAccountPayload struct {
+	Password string `json:"password" validate:"required"`
+}
+
 type GoogleUser struct {
 	ID            string `json:"id"`
 	Email         string `json:"email"`

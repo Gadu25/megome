@@ -133,11 +133,21 @@ func (s *Repository) ListActiveSessions(userId int) ([]SessionInfo, error) {
 }
 
 func (s *Repository) RevokeSession(id int, userId int) error {
-	_, err := s.db.Exec(
+	result, err := s.db.Exec(
 		"UPDATE refresh_tokens SET revokedAt = NOW() WHERE id = ? AND userId = ? AND revokedAt IS NULL",
 		id, userId,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return fmt.Errorf("session not found")
+	}
+	return nil
 }
 
 func (s *Repository) LogoutUser(token string) error {

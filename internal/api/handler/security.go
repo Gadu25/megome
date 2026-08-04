@@ -94,6 +94,10 @@ func (h *SecurityHandler) handleRevokeSession(w http.ResponseWriter, r *http.Req
 	}
 
 	if err := h.refreshStore.RevokeSession(sessionID, userID); err != nil {
+		if err.Error() == "session not found" {
+			httputil.WriteError(w, http.StatusNotFound, err)
+			return
+		}
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}

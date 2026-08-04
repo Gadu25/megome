@@ -130,6 +130,9 @@ func (s *APIServer) Run() error {
 	handler.NewAPILogHandler(apiLogRepo, userRepo).RegisterRoutes(internal)
 	handler.NewDashboardHandler(userRepo, patRepo, apiLogRepo).RegisterRoutes(internal)
 	handler.NewCompletionHandler(completionRepo, userRepo).RegisterRoutes(internal)
+	handler.NewAccountHandler(userRepo).RegisterRoutes(internal)
+	handler.NewSecurityHandler(userRepo, refreshRepo).RegisterRoutes(internal)
+	handler.NewDataExportHandler(userRepo, profileRepo, skillRepo, educationRepo, experienceRepo, projectRepo, certificationRepo).RegisterRoutes(internal)
 
 	public.NewProfileHandler(profileRepo, patRepo, apiLogRepo).RegisterRoutes(publicRouter)
 	public.NewSkillHandler(skillRepo, patRepo, apiLogRepo).RegisterRoutes(publicRouter)

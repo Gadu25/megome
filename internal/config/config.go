@@ -33,6 +33,9 @@ type Config struct {
 	SmtpPassword           string
 	SmtpFrom               string
 	SmtpEncryption         string
+	GeminiApiKey           string
+	GeminiModel            string
+	GeminiQuotaCooldown    int
 }
 var Envs Config
 
@@ -64,6 +67,9 @@ func initConfig() Config {
 		SmtpPassword:           getEnv("SMTP_PASSWORD", ""),
 		SmtpFrom:               getEnv("SMTP_FROM", ""),
 		SmtpEncryption:         getEnv("SMTP_ENCRYPTION", ""),
+		GeminiApiKey:           getEnv("GEMINI_API_KEY", ""),
+		GeminiModel:            getEnv("GEMINI_MODEL", "gemini-2.5-flash"),
+		GeminiQuotaCooldown:    getEnvAsInt("GEMINI_QUOTA_COOLDOWN", 1800),
 	}
 }
 

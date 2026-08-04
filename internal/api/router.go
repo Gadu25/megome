@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"megome/internal/api/handler"
 	"megome/internal/api/handler/public"
@@ -23,6 +24,7 @@ import (
 	"megome/internal/domain/technology"
 	"megome/internal/domain/user"
 	"megome/internal/middleware"
+	"megome/internal/pkg/ai"
 	"megome/internal/pkg/mailer"
 	"megome/internal/pkg/storage"
 
@@ -130,6 +132,11 @@ func (s *APIServer) Run() error {
 	handler.NewAPILogHandler(apiLogRepo, userRepo).RegisterRoutes(internal)
 	handler.NewDashboardHandler(userRepo, patRepo, apiLogRepo).RegisterRoutes(internal)
 	handler.NewCompletionHandler(completionRepo, userRepo).RegisterRoutes(internal)
+
+	aiStatus := ai.NewStatusTracker(config.Envs.GeminiApiKey != "", time.Duration(config.Envs.GeminiQuotaCooldown)*time.Second)
+	aiProvider := ai.NewGeminiClient(config.Envs.GeminiApiKey, config.Envs.GeminiModel)
+	aiService := ai.NewService(aiProvider, aiStatus)
+	handler.NewAssistHandler(aiService, userRepo).RegisterRoutes(internal)
 	handler.NewAccountHandler(userRepo).RegisterRoutes(internal)
 	handler.NewSecurityHandler(userRepo, refreshRepo).RegisterRoutes(internal)
 	handler.NewDataExportHandler(userRepo, profileRepo, skillRepo, educationRepo, experienceRepo, projectRepo, certificationRepo).RegisterRoutes(internal)

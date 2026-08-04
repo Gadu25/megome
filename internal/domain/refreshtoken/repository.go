@@ -111,6 +111,35 @@ func (s *Repository) RefreshRotation(token string) (string, string, error) {
 	return newRefreshToken, newAccessToken, nil
 }
 
+func (s *Repository) ListActiveSessions(userId int) ([]SessionInfo, error) {
+	rows, err := s.db.Query(
+		"SELECT id, userId, expiresAt, createdAt FROM refresh_tokens WHERE userId = ? AND revokedAt IS NULL AND expiresAt > NOW() ORDER BY createdAt DESC",
+		userId,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var sessions []SessionInfo
+	for rows.Next() {
+		var session SessionInfo
+		if err := rows.Scan(&session.ID, &session.UserId, &session.ExpiresAt, &session.CreatedAt); err != nil {
+			return nil, err
+		}
+		sessions = append(sessions, session)
+	}
+	return sessions, nil
+}
+
+func (s *Repository) RevokeSession(id int, userId int) error {
+	_, err := s.db.Exec(
+		"UPDATE refresh_tokens SET revokedAt = NOW() WHERE id = ? AND userId = ? AND revokedAt IS NULL",
+		id, userId,
+	)
+	return err
+}
+
 func (s *Repository) LogoutUser(token string) error {
 	tx, err := s.db.Begin()
 	if err != nil {

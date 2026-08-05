@@ -60,7 +60,7 @@ func TestAssistQuotaFlipsStatus(t *testing.T) {
 
 func TestAssistBlockedWhenUnavailable(t *testing.T) {
 	status := NewStatusTracker(true, time.Minute)
-	status.MarkUnavailable()
+	status.MarkUnavailable(0)
 	provider := &fakeProvider{text: `{"tagline":"x"}`}
 	svc := NewService(provider, status)
 

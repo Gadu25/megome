@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"errors"
+	"log"
 )
 
 var ErrUnknownTask = errors.New("unknown ai task")
@@ -42,15 +43,18 @@ func (s *Service) Assist(ctx context.Context, task string, context map[string]st
 	if err != nil {
 		var qe *QuotaError
 		if errors.As(err, &qe) {
-			s.status.MarkUnavailable()
+			log.Printf("gemini quota error: %s", qe.msg)
+			s.status.MarkUnavailable(qe.RetryAfter())
 			_, remaining := s.status.Status()
 			return nil, &UnavailableError{RemainingSeconds: remaining}
 		}
+		log.Printf("ai generation failed: %v", err)
 		return nil, ErrGeneration
 	}
 
 	fields, err := ParseFields(text)
 	if err != nil {
+		log.Printf("ai parse fields failed (raw=%q): %v", text, err)
 		return nil, ErrGeneration
 	}
 	return fields, nil

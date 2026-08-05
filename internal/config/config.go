@@ -68,7 +68,7 @@ func initConfig() Config {
 		SmtpFrom:               getEnv("SMTP_FROM", ""),
 		SmtpEncryption:         getEnv("SMTP_ENCRYPTION", ""),
 		GeminiApiKey:           getEnv("GEMINI_API_KEY", ""),
-		GeminiModel:            getEnv("GEMINI_MODEL", "gemini-2.5-flash"),
+		GeminiModel:            getEnv("GEMINI_MODEL", "gemini-2.0-flash"),
 		GeminiQuotaCooldown:    getEnvAsInt("GEMINI_QUOTA_COOLDOWN", 1800),
 	}
 }

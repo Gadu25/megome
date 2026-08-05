@@ -11,8 +11,8 @@ import (
 
 func TestGeminiGenerateTextSuccess(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Query().Get("key") == "" {
-			t.Error("expected api key in query")
+		if r.Header.Get("X-goog-api-key") == "" {
+			t.Error("expected api key in X-goog-api-key header")
 		}
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, `{"candidates":[{"content":{"parts":[{"text":"{\"tagline\":\"hi\"}"}]}}]}`)

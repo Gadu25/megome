@@ -18,7 +18,7 @@ func TestStatusTrackerAvailableInitially(t *testing.T) {
 
 func TestStatusTrackerUnavailableThenRecovers(t *testing.T) {
 	status := NewStatusTracker(true, 50*time.Millisecond)
-	status.MarkUnavailable()
+	status.MarkUnavailable(0)
 
 	available, remaining := status.Status()
 	if available {

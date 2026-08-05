@@ -17,11 +17,15 @@ func NewStatusTracker(enabled bool, cooldown time.Duration) *StatusTracker {
 	return &StatusTracker{enabled: enabled, cooldown: cooldown}
 }
 
-func (s *StatusTracker) MarkUnavailable() {
+func (s *StatusTracker) MarkUnavailable(customCooldown time.Duration) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.enabled {
-		s.unavailableUntil = time.Now().Add(s.cooldown)
+		cooldown := customCooldown
+		if cooldown <= 0 {
+			cooldown = s.cooldown
+		}
+		s.unavailableUntil = time.Now().Add(cooldown)
 	}
 }
 

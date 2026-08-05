@@ -10,9 +10,13 @@ import (
 	"time"
 )
 
-type QuotaError struct{ msg string }
+type QuotaError struct {
+	msg        string
+	retryAfter time.Duration
+}
 
-func (e *QuotaError) Error() string { return e.msg }
+func (e *QuotaError) Error() string   { return e.msg }
+func (e *QuotaError) RetryAfter() time.Duration { return e.retryAfter }
 
 type GeminiClient struct {
 	apiKey  string
@@ -41,7 +45,7 @@ func (c *GeminiClient) GenerateText(ctx context.Context, prompt string) (string,
 		},
 		"generationConfig": map[string]any{
 			"responseMimeType": "application/json",
-			"maxOutputTokens":  500,
+			"maxOutputTokens":  2048,
 		},
 	}
 
@@ -50,13 +54,14 @@ func (c *GeminiClient) GenerateText(ctx context.Context, prompt string) (string,
 		return "", fmt.Errorf("marshal gemini request: %w", err)
 	}
 
-	url := fmt.Sprintf("%s/%s:generateContent?key=%s", c.baseURL, c.model, c.apiKey)
+	url := fmt.Sprintf("%s/%s:generateContent", c.baseURL, c.model)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(payload))
 	if err != nil {
 		return "", fmt.Errorf("create gemini request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-goog-api-key", c.apiKey)
 
 	res, err := c.http.Do(req)
 	if err != nil {
@@ -70,7 +75,7 @@ func (c *GeminiClient) GenerateText(ctx context.Context, prompt string) (string,
 	}
 
 	if res.StatusCode == http.StatusTooManyRequests {
-		return "", &QuotaError{msg: fmt.Sprintf("gemini quota exceeded: %s", respBody)}
+		return "", &QuotaError{msg: fmt.Sprintf("gemini quota exceeded: %s", respBody), retryAfter: parseRetryDelay(respBody)}
 	}
 
 	if res.StatusCode != http.StatusOK {
@@ -96,4 +101,26 @@ func (c *GeminiClient) GenerateText(ctx context.Context, prompt string) (string,
 	}
 
 	return parsed.Candidates[0].Content.Parts[0].Text, nil
+}
+
+func parseRetryDelay(respBody []byte) time.Duration {
+	var resp struct {
+		Error struct {
+			Details []struct {
+				Type       string `json:"@type"`
+				RetryDelay string `json:"retryDelay"`
+			} `json:"details"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(respBody, &resp); err != nil {
+		return 0
+	}
+	for _, d := range resp.Error.Details {
+		if d.RetryDelay != "" {
+			if dur, err := time.ParseDuration(d.RetryDelay); err == nil {
+				return dur
+			}
+		}
+	}
+	return 0
 }

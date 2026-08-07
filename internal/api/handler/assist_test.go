@@ -63,7 +63,7 @@ func TestAssistHandlerAssistSuccess(t *testing.T) {
 
 func TestAssistHandlerAssistUnavailable(t *testing.T) {
 	status := ai.NewStatusTracker(true, time.Hour)
-	status.MarkUnavailable()
+	status.MarkUnavailable(0)
 	h := newAssistTestHandler(&fakeAIProvider{text: `{"description":"x"}`}, status)
 
 	req := httptest.NewRequest(http.MethodPost, "/ai/assist", strings.NewReader(`{"task":"generate_bio"}`))

@@ -1,7 +1,6 @@
 package project
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"megome/internal/domain/technology"
@@ -21,9 +20,9 @@ func NewRepository(db *sql.DB, storage *storage.R2Client) *Repository {
 
 func (s *Repository) GetProjectById(id int) (ProjectFull, error) {
 	row := s.db.QueryRow(`
-		SELECT id, title, description, link, githubLink, status, isDraft, displayOrder, createdAt, updatedAt
+		SELECT id, title, description, link, githubLink, status, isDraft, displayOrder, deletedAt, createdAt, updatedAt
 		FROM projects
-		WHERE id = ?
+		WHERE id = ? AND deletedAt IS NULL
 	`, id)
 
 	project, err := scanProject(row)
@@ -50,9 +49,9 @@ func (s *Repository) GetProjectById(id int) (ProjectFull, error) {
 
 func (s *Repository) GetProjects(userId int) ([]Project, error) {
 	rows, err := s.db.Query(`
-		SELECT id, title, description, link, githubLink, status, isDraft, displayOrder, createdAt, updatedAt
+		SELECT id, title, description, link, githubLink, status, isDraft, displayOrder, deletedAt, createdAt, updatedAt
 		FROM projects
-		WHERE userId = ?
+		WHERE userId = ? AND deletedAt IS NULL
 		ORDER BY displayOrder ASC, id ASC
 	`, userId)
 	if err != nil {
@@ -123,7 +122,7 @@ func (s *Repository) UpdateProject(id int, project Project) (ProjectFull, error)
 	return s.GetProjectById(id)
 }
 
-func (s *Repository) DeleteProject(id int) (ProjectFull, error) {
+func (s *Repository) DeleteProject(id int, deletedBy int) (ProjectFull, error) {
 	project, err := s.GetProjectById(id)
 	if err != nil {
 		return ProjectFull{}, err
@@ -139,46 +138,31 @@ func (s *Repository) DeleteProject(id int) (ProjectFull, error) {
 	}()
 
 	if _, err = tx.Exec(`
-		DELETE FROM project_images
-		WHERE projectId = ?
+		UPDATE project_images
+		SET deletedAt = NOW()
+		WHERE projectId = ? AND deletedAt IS NULL
 	`, id); err != nil {
 		return ProjectFull{}, err
 	}
 
 	if _, err = tx.Exec(`
-		DELETE FROM project_techs
-		WHERE projectId = ?
+		UPDATE project_techs
+		SET deletedAt = NOW()
+		WHERE projectId = ? AND deletedAt IS NULL
 	`, id); err != nil {
 		return ProjectFull{}, err
 	}
 
 	if _, err = tx.Exec(`
-		DELETE FROM projects
-		WHERE id = ?
+		UPDATE projects
+		SET deletedAt = NOW()
+		WHERE id = ? AND deletedAt IS NULL
 	`, id); err != nil {
 		return ProjectFull{}, err
 	}
 
 	if err = tx.Commit(); err != nil {
 		return ProjectFull{}, err
-	}
-
-	ctx := context.Background()
-
-	for _, shot := range project.Images.Screenshots {
-		key := httputil.ExtractR2Key(shot.URL)
-		err = s.storage.DeleteObject(ctx, key)
-		if err != nil {
-			return ProjectFull{}, err
-		}
-	}
-
-	if project.Images.Cover != nil && *project.Images.Cover != "" {
-		key := httputil.ExtractR2Key(*project.Images.Cover)
-		err = s.storage.DeleteObject(ctx, key)
-		if err != nil {
-			return ProjectFull{}, err
-		}
 	}
 
 	return project, nil
@@ -193,7 +177,7 @@ func (s *Repository) GetProjectImages(projectIds []int) (map[int][]ProjectImage,
 	rows, err := s.db.Query(fmt.Sprintf(`
 		SELECT id, projectId, url, type, position, createdAt, updatedAt
 		FROM project_images
-		WHERE projectId IN (%s)
+		WHERE projectId IN (%s) AND deletedAt IS NULL
 	`, query), args...)
 	if err != nil {
 		return nil, err
@@ -233,7 +217,7 @@ func (s *Repository) GetProjectTechs(projectIds []int) (map[int][]technology.Tec
 			t.updatedAt
 		FROM project_techs pt
 		INNER JOIN technologies t ON pt.techId = t.id
-		WHERE pt.projectId IN (%s)
+		WHERE pt.projectId IN (%s) AND pt.deletedAt IS NULL
 	`, query), args...)
 	if err != nil {
 		return nil, err
@@ -254,9 +238,28 @@ func (s *Repository) GetProjectTechs(projectIds []int) (map[int][]technology.Tec
 	return result, rows.Err()
 }
 
-func (s *Repository) GetProjectsFull(userId int) ([]ProjectFull, error) {
-	projects, err := s.GetProjects(userId)
+func (s *Repository) GetProjectsFull(userId int, limit int, offset int) ([]ProjectFull, error) {
+	rows, err := s.db.Query(`
+		SELECT id, title, description, link, githubLink, status, isDraft, displayOrder, deletedAt, createdAt, updatedAt
+		FROM projects
+		WHERE userId = ? AND deletedAt IS NULL
+		ORDER BY displayOrder ASC, id ASC
+		LIMIT ? OFFSET ?
+	`, userId, limit, offset)
 	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var projects []Project
+	for rows.Next() {
+		project, err := scanProject(rows)
+		if err != nil {
+			return nil, err
+		}
+		projects = append(projects, project)
+	}
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
@@ -319,6 +322,7 @@ func scanProject(scanner interface {
 		&project.Status,
 		&project.IsDraft,
 		&project.DisplayOrder,
+		&project.DeletedAt,
 		&project.CreatedAt,
 		&project.UpdatedAt,
 	)
@@ -393,7 +397,7 @@ func (s *Repository) GetProjectImageByID(id int) (ProjectImage, error) {
 	row := s.db.QueryRow(`
 		SELECT id, projectId, url, type, position, createdAt, updatedAt
 		FROM project_images
-		WHERE id = ?
+		WHERE id = ? AND deletedAt IS NULL
 	`, id)
 	return scanProjectImage(row)
 }
@@ -402,7 +406,7 @@ func (s *Repository) GetProjectImagesByProjectID(projectId int) ([]ProjectImage,
 	rows, err := s.db.Query(`
 		SELECT id, projectId, url, type, position, createdAt, updatedAt
 		FROM project_images
-		WHERE projectId = ?
+		WHERE projectId = ? AND deletedAt IS NULL
 		ORDER BY 
 			CASE type
 				WHEN 'cover' THEN 0
@@ -621,4 +625,10 @@ func (s *Repository) ReorderProjects(userID int, items []ReorderItem) error {
 	}
 
 	return tx.Commit()
+}
+
+func (s *Repository) CountByUserID(userID int) (int, error) {
+	var count int
+	err := s.db.QueryRow("SELECT COUNT(*) FROM projects WHERE userId = ? AND deletedAt IS NULL", userID).Scan(&count)
+	return count, err
 }

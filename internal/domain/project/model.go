@@ -5,11 +5,12 @@ import "megome/internal/domain/technology"
 type ProjectStore interface {
 	GetProjectById(int) (ProjectFull, error)
 	GetProjects(int) ([]Project, error)
-	GetProjectsFull(int) ([]ProjectFull, error)
+	GetProjectsFull(userID int, limit int, offset int) ([]ProjectFull, error)
 	CreateProject(Project) (ProjectFull, error)
 	UpdateProject(int, Project) (ProjectFull, error)
-	DeleteProject(int) (ProjectFull, error)
+	DeleteProject(id int, deletedBy int) (ProjectFull, error)
 	ReorderProjects(int, []ReorderItem) error
+	CountByUserID(userID int) (int, error)
 }
 
 type Project struct {
@@ -24,6 +25,7 @@ type Project struct {
 	DisplayOrder int     `json:"displayOrder"`
 	CreatedAt    string  `json:"createdAt"`
 	UpdatedAt    *string `json:"updatedAt"`
+	DeletedAt    *string `json:"deletedAt,omitempty"`
 }
 
 type ReorderItem struct {
@@ -46,6 +48,15 @@ type ProjectFull struct {
 
 	Images       ProjectImages          `json:"images"`
 	Technologies []technology.Technology `json:"technologies"`
+}
+
+type PaginatedProjectsResponse struct {
+	Data       []ProjectFull `json:"data"`
+	Pagination struct {
+		Limit  int `json:"limit"`
+		Offset int `json:"offset"`
+		Total  int `json:"total"`
+	} `json:"pagination"`
 }
 
 type ProjectPayload struct {

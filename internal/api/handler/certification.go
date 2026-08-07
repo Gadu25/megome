@@ -73,15 +73,38 @@ func (h *CertificationHandler) uploadCertificateImage(r *http.Request) (*string,
 
 func (h *CertificationHandler) handleViewCertification(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	certifications, err := h.certificationStore.GetCertifications(userID)
+
+	limit := 20
+	offset := 0
+	query := r.URL.Query()
+	if l := query.Get("limit"); l != "" {
+		limit = httputil.ParseIntOrDefault(l, 20)
+	}
+	if o := query.Get("offset"); o != "" {
+		offset = httputil.ParseIntOrDefault(o, 0)
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	certifications, err := h.certificationStore.GetCertifications(userID, limit, offset)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	resp := CertificationResponse{
-		Message:      "Certification fetched successfully",
-		Certificates: certifications,
+
+	total, err := h.certificationStore.CountByUserID(userID)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
 	}
+
+	resp := certification.PaginatedCertificationsResponse{
+		Data: certifications,
+	}
+	resp.Pagination.Limit = limit
+	resp.Pagination.Offset = offset
+	resp.Pagination.Total = total
 	httputil.WriteJSON(w, http.StatusOK, resp)
 }
 
@@ -227,7 +250,8 @@ func (h *CertificationHandler) handleDeleteCertification(w http.ResponseWriter, 
 		return
 	}
 
-	cert, err := h.certificationStore.DeleteCertification(id)
+	userID := middleware.GetUserIDFromContext(r.Context())
+	cert, err := h.certificationStore.DeleteCertification(id, userID)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return

@@ -28,9 +28,11 @@ func (s *Repository) GetTechnologyById(id int) (*Technology, error) {
 	return technology, nil
 }
 
-func (s *Repository) GetTechnologies() ([]Technology, error) {
+func (s *Repository) GetTechnologies(limit int, offset int) ([]Technology, error) {
 	rows, err := s.db.Query(
-		"SELECT id, createdByUserId, name, slug, category, isVerified, createdAt, updatedAt FROM technologies",
+		"SELECT id, createdByUserId, name, slug, category, isVerified, createdAt, updatedAt FROM technologies LIMIT ? OFFSET ?",
+		limit,
+		offset,
 	)
 	if err != nil {
 		return nil, err
@@ -102,4 +104,10 @@ func scanRowIntoTechnology(rows *sql.Rows) (Technology, error) {
 	}
 
 	return technology, nil
+}
+
+func (s *Repository) CountAll() (int, error) {
+	var count int
+	err := s.db.QueryRow("SELECT COUNT(*) FROM technologies").Scan(&count)
+	return count, err
 }

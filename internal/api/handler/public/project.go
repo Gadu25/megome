@@ -53,7 +53,7 @@ func (h *ProjectHandler) RegisterRoutes(router *mux.Router) {
 func (h *ProjectHandler) handleGetPublicProjects(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetPATUserIDFromContext(r.Context())
 
-	projects, err := h.projectStore.GetProjectsFull(userID)
+	projects, err := h.projectStore.GetProjectsFull(userID, 1000, 0)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return

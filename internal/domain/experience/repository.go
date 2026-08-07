@@ -17,7 +17,7 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 func (s *Repository) GetExperienceById(id int) (Experience, error) {
-	row := s.db.QueryRow("SELECT id, userId, title, company, logo, startDate, endDate, isPresent, description, displayOrder, createdAt, updatedAt FROM experiences WHERE id = ?", id)
+	row := s.db.QueryRow("SELECT id, userId, title, company, logo, startDate, endDate, isPresent, description, displayOrder, deletedAt, createdAt, updatedAt FROM experiences WHERE id = ? AND deletedAt IS NULL", id)
 	experience, err := scanRowIntoExperience(row)
 	if err != nil {
 		return Experience{}, err
@@ -35,7 +35,7 @@ func (s *Repository) GetExperienceById(id int) (Experience, error) {
 
 func (s *Repository) getExperiences(userID int) ([]Experience, error) {
 	rows, err := s.db.Query(
-		"SELECT id, userId, title, company, logo, startDate, endDate, isPresent, description, displayOrder, createdAt, updatedAt FROM experiences WHERE userId = ? ORDER BY displayOrder ASC, id ASC",
+		"SELECT id, userId, title, company, logo, startDate, endDate, isPresent, description, displayOrder, deletedAt, createdAt, updatedAt FROM experiences WHERE userId = ? AND deletedAt IS NULL ORDER BY displayOrder ASC, id ASC",
 		userID,
 	)
 	if err != nil {
@@ -70,8 +70,19 @@ func (s *Repository) populateTechs(experiences []Experience) ([]Experience, erro
 	return result, nil
 }
 
-func (s *Repository) GetExperiences(userID int) ([]Experience, error) {
-	experiences, err := s.getExperiences(userID)
+func (s *Repository) GetExperiences(userID int, limit int, offset int) ([]Experience, error) {
+	rows, err := s.db.Query(
+		"SELECT id, userId, title, company, logo, startDate, endDate, isPresent, description, displayOrder, deletedAt, createdAt, updatedAt FROM experiences WHERE userId = ? AND deletedAt IS NULL ORDER BY displayOrder ASC, id ASC LIMIT ? OFFSET ?",
+		userID,
+		limit,
+		offset,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	experiences, err := scanRowsIntoExperience(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -121,18 +132,36 @@ func (s *Repository) UpdateExperience(id int, experience Experience) (Experience
 	return s.GetExperienceById(id)
 }
 
-func (s *Repository) DeleteExperience(id int) (Experience, error) {
-	cert, err := s.GetExperienceById(id)
+func (s *Repository) DeleteExperience(id int, deletedBy int) (Experience, error) {
+	exp, err := s.GetExperienceById(id)
 
 	if err != nil {
 		return Experience{}, err
 	}
 
-	_, err = s.db.Exec("DELETE FROM experiences WHERE id = ?", id)
+	tx, err := s.db.Begin()
 	if err != nil {
 		return Experience{}, err
 	}
-	return cert, nil
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	_, err = tx.Exec("UPDATE experience_techs SET deletedAt = NOW() WHERE experienceId = ? AND deletedAt IS NULL", id)
+	if err != nil {
+		return Experience{}, err
+	}
+
+	_, err = tx.Exec("UPDATE experiences SET deletedAt = NOW() WHERE id = ? AND deletedAt IS NULL", id)
+	if err != nil {
+		return Experience{}, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return Experience{}, err
+	}
+
+	return exp, nil
 }
 
 func (s *Repository) GetExperienceTechs(experienceIDs []int) (map[int][]technology.Technology, error) {
@@ -162,7 +191,7 @@ func (s *Repository) GetExperienceTechs(experienceIDs []int) (map[int][]technolo
 		FROM experience_techs et
 		INNER JOIN technologies t ON et.techId = t.id
 		WHERE et.experienceId IN (%s)
-	`, strings.Join(placeholders, ","))
+	`, strings.Join(placeholders, ",")) + " AND et.deletedAt IS NULL"
 
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
@@ -212,6 +241,7 @@ func scanRowIntoExperience(scanner interface{ Scan(dest ...interface{}) error })
 		&experience.IsPresent,
 		&experience.Description,
 		&experience.DisplayOrder,
+		&experience.DeletedAt,
 		&experience.CreatedAt,
 		&experience.UpdatedAt,
 	)
@@ -347,4 +377,10 @@ func (s *Repository) ReorderExperiences(userID int, items []ReorderItem) error {
 	}
 
 	return tx.Commit()
+}
+
+func (s *Repository) CountByUserID(userID int) (int, error) {
+	var count int
+	err := s.db.QueryRow("SELECT COUNT(*) FROM experiences WHERE userId = ? AND deletedAt IS NULL", userID).Scan(&count)
+	return count, err
 }

@@ -14,14 +14,16 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 func (s *Repository) GetEducationById(id int) (Education, error) {
-	row := s.db.QueryRow("SELECT id, userId, school, description, degree, fieldOfStudy, startDate, endDate, isPresent, displayOrder, createdAt, updatedAt FROM education WHERE id = ?", id)
+	row := s.db.QueryRow("SELECT id, userId, school, description, degree, fieldOfStudy, startDate, endDate, isPresent, displayOrder, deletedAt, createdAt, updatedAt FROM education WHERE id = ? AND deletedAt IS NULL", id)
 	return scanRowIntoEducation(row)
 }
 
-func (s *Repository) GetEducations(userID int) ([]Education, error) {
+func (s *Repository) GetEducations(userID int, limit int, offset int) ([]Education, error) {
 	rows, err := s.db.Query(
-		"SELECT id, userId, school, description, degree, fieldOfStudy, startDate, endDate, isPresent, displayOrder, createdAt, updatedAt FROM education WHERE userId = ? ORDER BY displayOrder ASC, id ASC",
+		"SELECT id, userId, school, description, degree, fieldOfStudy, startDate, endDate, isPresent, displayOrder, deletedAt, createdAt, updatedAt FROM education WHERE userId = ? AND deletedAt IS NULL ORDER BY displayOrder ASC, id ASC LIMIT ? OFFSET ?",
 		userID,
+		limit,
+		offset,
 	)
 	if err != nil {
 		return nil, err
@@ -73,14 +75,14 @@ func (s *Repository) UpdateEducation(id int, education Education) (Education, er
 	return s.GetEducationById(id)
 }
 
-func (s *Repository) DeleteEducation(id int) (Education, error) {
+func (s *Repository) DeleteEducation(id int, deletedBy int) (Education, error) {
 	cert, err := s.GetEducationById(id)
 
 	if err != nil {
 		return Education{}, err
 	}
 
-	_, err = s.db.Exec("DELETE FROM education WHERE id = ?", id)
+	_, err = s.db.Exec("UPDATE education SET deletedAt = NOW() WHERE id = ? AND deletedAt IS NULL", id)
 	if err != nil {
 		return Education{}, err
 	}
@@ -100,6 +102,7 @@ func scanRowIntoEducation(scanner interface{ Scan(dest ...interface{}) error }) 
 		&education.EndDate,
 		&education.IsPresent,
 		&education.DisplayOrder,
+		&education.DeletedAt,
 		&education.CreatedAt,
 		&education.UpdatedAt,
 	)
@@ -130,6 +133,12 @@ func (s *Repository) ReorderEducations(userID int, items []ReorderItem) error {
 	}
 
 	return tx.Commit()
+}
+
+func (s *Repository) CountByUserID(userID int) (int, error) {
+	var count int
+	err := s.db.QueryRow("SELECT COUNT(*) FROM education WHERE userId = ? AND deletedAt IS NULL", userID).Scan(&count)
+	return count, err
 }
 
 func scanRowsIntoEducation(rows *sql.Rows) ([]Education, error) {

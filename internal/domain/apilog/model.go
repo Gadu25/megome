@@ -9,6 +9,8 @@ type APIUsageLogStore interface {
 	Create(log APIUsageLog) error
 	GetByTokenID(tokenId int, limit int, offset int) (APIUsageLogWithToken, error)
 	GetUserUsageStats(userId int) (UserAPIUsageStats, error)
+	GetRecentActivity(userId int, limit int) ([]DashboardActivity, error)
+	GetDailyUsage(userId int, days int) ([]DailyUsage, error)
 }
 
 type APIUsageLog struct {
@@ -32,4 +34,16 @@ type APIUsageLogWithToken struct {
 type UserAPIUsageStats struct {
 	RequestCount      int     `json:"requestCount"`
 	AverageResponseMs float64 `json:"averageResponseMs"`
+}
+
+type DashboardActivity struct {
+	Type      string `json:"type"`
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	CreatedAt string `json:"createdAt"`
+}
+
+type DailyUsage struct {
+	Date  string `json:"date"`
+	Count int    `json:"count"`
 }

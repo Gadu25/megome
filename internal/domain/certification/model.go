@@ -1,11 +1,12 @@
 package certification
 
 type CertificationStore interface {
-	GetCertifications(userId int) ([]Certification, error)
+	GetCertifications(userId int, limit int, offset int) ([]Certification, error)
 	GetCertificationById(id int) (Certification, error)
 	CreateCertification(Certification) (Certification, error)
 	UpdateCertification(id int, certification Certification) (Certification, error)
-	DeleteCertification(id int) (Certification, error)
+	DeleteCertification(id int, deletedBy int) (Certification, error)
+	CountByUserID(userId int) (int, error)
 }
 
 type Certification struct {
@@ -21,6 +22,7 @@ type Certification struct {
 	DisplayOrder     int     `json:"displayOrder"`
 	CreatedAt        string  `json:"createdAt"`
 	UpdatedAt        string  `json:"updatedAt"`
+	DeletedAt        *string `json:"deletedAt,omitempty"`
 }
 
 type ReorderItem struct {
@@ -36,4 +38,13 @@ type CertificationPayload struct {
 	ExpirationDate   *string `json:"expirationDate"`
 	CredentialId     *string `json:"credentialId"`
 	CredentialUrl    *string `json:"credentialUrl"`
+}
+
+type PaginatedCertificationsResponse struct {
+	Data       []Certification `json:"data"`
+	Pagination struct {
+		Limit  int `json:"limit"`
+		Offset int `json:"offset"`
+		Total  int `json:"total"`
+	} `json:"pagination"`
 }

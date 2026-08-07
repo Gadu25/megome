@@ -15,14 +15,16 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 func (s *Repository) GetCertificationById(id int) (Certification, error) {
-	row := s.db.QueryRow("SELECT id, userId, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl, displayOrder, createdAt, updatedAt FROM certifications WHERE id = ?", id)
+	row := s.db.QueryRow("SELECT id, userId, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl, displayOrder, deletedAt, createdAt, updatedAt FROM certifications WHERE id = ? AND deletedAt IS NULL", id)
 	return scanRowIntoCertification(row)
 }
 
-func (s *Repository) GetCertifications(userId int) ([]Certification, error) {
+func (s *Repository) GetCertifications(userId int, limit int, offset int) ([]Certification, error) {
 	rows, err := s.db.Query(
-		"SELECT id, userId, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl, displayOrder, createdAt, updatedAt FROM certifications WHERE userId = ? ORDER BY displayOrder ASC, id ASC",
+		"SELECT id, userId, title, issuer, issueDate, certificateImage, expirationDate, credentialId, credentialUrl, displayOrder, deletedAt, createdAt, updatedAt FROM certifications WHERE userId = ? AND deletedAt IS NULL ORDER BY displayOrder ASC, id ASC LIMIT ? OFFSET ?",
 		userId,
+		limit,
+		offset,
 	)
 	if err != nil {
 		return nil, err
@@ -75,13 +77,13 @@ func (s *Repository) UpdateCertification(id int, certification Certification) (C
 	return s.GetCertificationById(id)
 }
 
-func (s *Repository) DeleteCertification(id int) (Certification, error) {
+func (s *Repository) DeleteCertification(id int, deletedBy int) (Certification, error) {
 	cert, err := s.GetCertificationById(id)
 	if err != nil {
 		return Certification{}, err
 	}
 
-	_, err = s.db.Exec("DELETE FROM certifications WHERE id = ?", id)
+	_, err = s.db.Exec("UPDATE certifications SET deletedAt = NOW() WHERE id = ? AND deletedAt IS NULL", id)
 	if err != nil {
 		return Certification{}, err
 	}
@@ -102,6 +104,7 @@ func scanRowIntoCertification(scanner interface{ Scan(dest ...interface{}) error
 		&certification.CredentialId,
 		&certification.CredentialUrl,
 		&certification.DisplayOrder,
+		&certification.DeletedAt,
 		&certification.CreatedAt,
 		&certification.UpdatedAt,
 	)
@@ -151,4 +154,10 @@ func (s *Repository) ReorderCertifications(userID int, items []ReorderItem) erro
 	}
 
 	return tx.Commit()
+}
+
+func (s *Repository) CountByUserID(userID int) (int, error) {
+	var count int
+	err := s.db.QueryRow("SELECT COUNT(*) FROM certifications WHERE userId = ? AND deletedAt IS NULL", userID).Scan(&count)
+	return count, err
 }

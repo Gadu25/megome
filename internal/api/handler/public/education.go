@@ -42,7 +42,7 @@ func (h *EducationHandler) RegisterRoutes(router *mux.Router) {
 func (h *EducationHandler) handleGetPublicEducation(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetPATUserIDFromContext(r.Context())
 
-	educations, err := h.educationStore.GetEducations(userID)
+	educations, err := h.educationStore.GetEducations(userID, 1000, 0)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return

@@ -3,12 +3,13 @@ package experience
 import "megome/internal/domain/technology"
 
 type ExperienceStore interface {
-	GetExperiences(userId int) ([]Experience, error)
+	GetExperiences(userId int, limit int, offset int) ([]Experience, error)
 	GetExperienceById(id int) (Experience, error)
 	CreateExperience(Experience) (Experience, error)
 	UpdateExperience(id int, Experience Experience) (Experience, error)
-	DeleteExperience(id int) (Experience, error)
+	DeleteExperience(id int, deletedBy int) (Experience, error)
 	ReorderExperiences(userID int, items []ReorderItem) error
+	CountByUserID(userId int) (int, error)
 }
 
 type Experience struct {
@@ -25,6 +26,7 @@ type Experience struct {
 	DisplayOrder int                      `json:"displayOrder"`
 	CreatedAt    string                   `json:"createdAt"`
 	UpdatedAt    string                   `json:"updatedAt"`
+	DeletedAt    *string                  `json:"deletedAt,omitempty"`
 }
 
 type ReorderItem struct {
@@ -59,6 +61,15 @@ type ExperienceTech struct {
 type ExperienceTechPayload struct {
 	ExperienceID int `json:"experienceId"`
 	TechID       int `json:"techId"`
+}
+
+type PaginatedExperiencesResponse struct {
+	Data       []Experience `json:"data"`
+	Pagination struct {
+		Limit  int `json:"limit"`
+		Offset int `json:"offset"`
+		Total  int `json:"total"`
+	} `json:"pagination"`
 }
 
 type BatchExperienceTechPayload struct {

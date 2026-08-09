@@ -13,14 +13,16 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 func (s *Repository) GetSkillById(id int) (Skill, error) {
-	row := s.db.QueryRow("SELECT id, userId, skillName, proficiency, createdAt, updatedAt FROM skills WHERE id = ?", id)
+	row := s.db.QueryRow("SELECT id, userId, skillName, proficiency, deletedAt, createdAt, updatedAt FROM skills WHERE id = ? AND deletedAt IS NULL", id)
 	return scanRowIntoSkill(row)
 }
 
-func (s *Repository) GetSkills(userID int) ([]Skill, error) {
+func (s *Repository) GetSkills(userID int, limit int, offset int) ([]Skill, error) {
 	rows, err := s.db.Query(
-		"SELECT id, userId, skillName, proficiency, createdAt, updatedAt FROM skills WHERE userId = ?",
+		"SELECT id, userId, skillName, proficiency, deletedAt, createdAt, updatedAt FROM skills WHERE userId = ? AND deletedAt IS NULL LIMIT ? OFFSET ?",
 		userID,
+		limit,
+		offset,
 	)
 	if err != nil {
 		return nil, err
@@ -62,14 +64,14 @@ func (s *Repository) UpdateSkill(id int, skill Skill) (Skill, error) {
 	return s.GetSkillById(id)
 }
 
-func (s *Repository) DeleteSkill(id int) (Skill, error) {
+func (s *Repository) DeleteSkill(id int, deletedBy int) (Skill, error) {
 	skill, err := s.GetSkillById(id)
 
 	if err != nil {
 		return Skill{}, err
 	}
 
-	_, err = s.db.Exec("DELETE FROM skills WHERE id = ?", id)
+	_, err = s.db.Exec("UPDATE skills SET deletedAt = NOW() WHERE id = ? AND deletedAt IS NULL", id)
 	if err != nil {
 		return Skill{}, err
 	}
@@ -84,6 +86,7 @@ func scanRowIntoSkill(scanner interface{ Scan(dest ...interface{}) error }) (Ski
 		&skill.UserID,
 		&skill.SkillName,
 		&skill.Proficiency,
+		&skill.DeletedAt,
 		&skill.CreatedAt,
 		&skill.UpdatedAt,
 	)
@@ -103,4 +106,10 @@ func scanRowsIntoSkill(rows *sql.Rows) ([]Skill, error) {
 		skills = append(skills, skill)
 	}
 	return skills, rows.Err()
+}
+
+func (s *Repository) CountByUserID(userID int) (int, error) {
+	var count int
+	err := s.db.QueryRow("SELECT COUNT(*) FROM skills WHERE userId = ? AND deletedAt IS NULL", userID).Scan(&count)
+	return count, err
 }

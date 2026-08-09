@@ -35,15 +35,37 @@ func (h *TechnologyHandler) RegisterRoutes(router *mux.Router) {
 }
 
 func (h *TechnologyHandler) handleViewTechnology(w http.ResponseWriter, r *http.Request) {
-	technologies, err := h.technologyStore.GetTechnologies()
+	limit := 20
+	offset := 0
+	query := r.URL.Query()
+	if l := query.Get("limit"); l != "" {
+		limit = httputil.ParseIntOrDefault(l, 20)
+	}
+	if o := query.Get("offset"); o != "" {
+		offset = httputil.ParseIntOrDefault(o, 0)
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	technologies, err := h.technologyStore.GetTechnologies(limit, offset)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	resp := TechnologyResponses{
-		Message:      "Technology fetched successfully",
-		Technologies: technologies,
+
+	total, err := h.technologyStore.CountAll()
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
 	}
+
+	resp := technology.PaginatedTechnologiesResponse{
+		Data: technologies,
+	}
+	resp.Pagination.Limit = limit
+	resp.Pagination.Offset = offset
+	resp.Pagination.Total = total
 	httputil.WriteJSON(w, http.StatusOK, resp)
 }
 

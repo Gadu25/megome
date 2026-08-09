@@ -41,15 +41,38 @@ func (h *SkillHandler) RegisterRoutes(router *mux.Router) {
 
 func (h *SkillHandler) handleViewSkills(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	skills, err := h.skillStore.GetSkills(userID)
+
+	limit := 20
+	offset := 0
+	query := r.URL.Query()
+	if l := query.Get("limit"); l != "" {
+		limit = httputil.ParseIntOrDefault(l, 20)
+	}
+	if o := query.Get("offset"); o != "" {
+		offset = httputil.ParseIntOrDefault(o, 0)
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	skills, err := h.skillStore.GetSkills(userID, limit, offset)
 	if err != nil {
 		httputil.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	resp := SkillReponse{
-		Message: "Skills fetched successfully",
-		Skills:  skills,
+
+	total, err := h.skillStore.CountByUserID(userID)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
 	}
+
+	resp := skill.PaginatedSkillsResponse{
+		Data: skills,
+	}
+	resp.Pagination.Limit = limit
+	resp.Pagination.Offset = offset
+	resp.Pagination.Total = total
 	httputil.WriteJSON(w, http.StatusOK, resp)
 }
 
@@ -127,7 +150,8 @@ func (h *SkillHandler) handleDeleteSkill(w http.ResponseWriter, r *http.Request)
 		httputil.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	s, err := h.skillStore.DeleteSkill(id)
+	userID := middleware.GetUserIDFromContext(r.Context())
+	s, err := h.skillStore.DeleteSkill(id, userID)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return

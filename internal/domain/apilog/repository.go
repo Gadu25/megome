@@ -149,3 +149,57 @@ func (s *Repository) GetUserUsageStats(userID int) (UserAPIUsageStats, error) {
 
 	return stats, nil
 }
+
+func (s *Repository) GetRecentActivity(userID int, limit int) ([]DashboardActivity, error) {
+	rows, err := s.db.Query(`
+		SELECT 'project' as type, id, title as name, createdAt FROM projects WHERE userId = ? AND deletedAt IS NULL
+		UNION ALL
+		SELECT 'skill', id, skillName, createdAt FROM skills WHERE userId = ? AND deletedAt IS NULL
+		UNION ALL
+		SELECT 'education', id, CONCAT(degree, ' at ', school), createdAt FROM education WHERE userId = ? AND deletedAt IS NULL
+		UNION ALL
+		SELECT 'experience', id, title, createdAt FROM experiences WHERE userId = ? AND deletedAt IS NULL
+		UNION ALL
+		SELECT 'certification', id, title, createdAt FROM certifications WHERE userId = ? AND deletedAt IS NULL
+		ORDER BY createdAt DESC
+		LIMIT ?
+	`, userID, userID, userID, userID, userID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var activities []DashboardActivity
+	for rows.Next() {
+		var a DashboardActivity
+		if err := rows.Scan(&a.Type, &a.ID, &a.Name, &a.CreatedAt); err != nil {
+			return nil, err
+		}
+		activities = append(activities, a)
+	}
+	return activities, rows.Err()
+}
+
+func (s *Repository) GetDailyUsage(userID int, days int) ([]DailyUsage, error) {
+	rows, err := s.db.Query(`
+		SELECT DATE(createdAt) as date, COUNT(*) as count
+		FROM api_usage_logs
+		WHERE userId = ? AND createdAt >= DATE_SUB(NOW(), INTERVAL ? DAY)
+		GROUP BY DATE(createdAt)
+		ORDER BY date ASC
+	`, userID, days)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var usages []DailyUsage
+	for rows.Next() {
+		var u DailyUsage
+		if err := rows.Scan(&u.Date, &u.Count); err != nil {
+			return nil, err
+		}
+		usages = append(usages, u)
+	}
+	return usages, rows.Err()
+}

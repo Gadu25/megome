@@ -46,12 +46,13 @@ func (s *Repository) GetPATByToken(token string) (PATMinified, error) {
 	return pat, nil
 }
 
-func (s *Repository) GetPATs(userId int) ([]PersonalAccessToken, error) {
+func (s *Repository) GetPATs(userId int, limit int, offset int) ([]PersonalAccessToken, error) {
 	rows, err := s.db.Query(`
 		SELECT id, name, lastUsedAt, revokedAt, createdAt, updatedAt
 		FROM personal_access_tokens
 		WHERE userId = ?
-	`, userId)
+		LIMIT ? OFFSET ?
+	`, userId, limit, offset)
 	if err != nil {
 		return nil, err
 	}

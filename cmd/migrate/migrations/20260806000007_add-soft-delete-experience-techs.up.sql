@@ -1,0 +1,1 @@
+ALTER TABLE experience_techs ADD COLUMN deletedAt TIMESTAMP NULL DEFAULT NULL;

@@ -47,15 +47,38 @@ func (h *ExperienceHandler) RegisterRoutes(router *mux.Router) {
 
 func (h *ExperienceHandler) handleViewExperiences(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	experiences, err := h.experienceStore.GetExperiences(userID)
+
+	limit := 20
+	offset := 0
+	query := r.URL.Query()
+	if l := query.Get("limit"); l != "" {
+		limit = httputil.ParseIntOrDefault(l, 20)
+	}
+	if o := query.Get("offset"); o != "" {
+		offset = httputil.ParseIntOrDefault(o, 0)
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	experiences, err := h.experienceStore.GetExperiences(userID, limit, offset)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	resp := ExperienceResponse{
-		Message:     "Experience fetched successfully",
-		Experiences: experiences,
+
+	total, err := h.experienceStore.CountByUserID(userID)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
 	}
+
+	resp := experience.PaginatedExperiencesResponse{
+		Data: experiences,
+	}
+	resp.Pagination.Limit = limit
+	resp.Pagination.Offset = offset
+	resp.Pagination.Total = total
 	httputil.WriteJSON(w, http.StatusOK, resp)
 }
 
@@ -238,7 +261,8 @@ func (h *ExperienceHandler) handleDeleteExperience(w http.ResponseWriter, r *htt
 		httputil.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	exp, err := h.experienceStore.DeleteExperience(id)
+	userID := middleware.GetUserIDFromContext(r.Context())
+	exp, err := h.experienceStore.DeleteExperience(id, userID)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return

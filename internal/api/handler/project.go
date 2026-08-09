@@ -100,15 +100,38 @@ func (h *ProjectHandler) handleViewProject(w http.ResponseWriter, r *http.Reques
 
 func (h *ProjectHandler) handleViewProjects(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
-	projects, err := h.projectStore.GetProjectsFull(userID)
+
+	limit := 20
+	offset := 0
+	query := r.URL.Query()
+	if l := query.Get("limit"); l != "" {
+		limit = httputil.ParseIntOrDefault(l, 20)
+	}
+	if o := query.Get("offset"); o != "" {
+		offset = httputil.ParseIntOrDefault(o, 0)
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	projects, err := h.projectStore.GetProjectsFull(userID, limit, offset)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	resp := FullProjectResponse{
-		Message:  "Project fetched successfully",
-		Projects: projects,
+
+	total, err := h.projectStore.CountByUserID(userID)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
 	}
+
+	resp := project.PaginatedProjectsResponse{
+		Data: projects,
+	}
+	resp.Pagination.Limit = limit
+	resp.Pagination.Offset = offset
+	resp.Pagination.Total = total
 	httputil.WriteJSON(w, http.StatusOK, resp)
 }
 
@@ -191,7 +214,8 @@ func (h *ProjectHandler) handleDeleteProject(w http.ResponseWriter, r *http.Requ
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
-	p, err := h.projectStore.DeleteProject(id)
+	userID := middleware.GetUserIDFromContext(r.Context())
+	p, err := h.projectStore.DeleteProject(id, userID)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return

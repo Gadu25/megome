@@ -1,10 +1,11 @@
 package technology
 
 type TechnologyStore interface {
-	GetTechnologies() ([]Technology, error)
+	GetTechnologies(limit int, offset int) ([]Technology, error)
 	CreateTechnology(Technology) error
 	UpdateTechnology(id int, technology Technology) error
 	DeleteTechnology(id int) error
+	CountAll() (int, error)
 }
 
 type Technology struct {
@@ -21,4 +22,13 @@ type Technology struct {
 type TechnologyPayload struct {
 	Name     string `json:"name"`
 	Category string `json:"category"`
+}
+
+type PaginatedTechnologiesResponse struct {
+	Data       []Technology `json:"data"`
+	Pagination struct {
+		Limit  int `json:"limit"`
+		Offset int `json:"offset"`
+		Total  int `json:"total"`
+	} `json:"pagination"`
 }

@@ -53,7 +53,7 @@ func (h *ExperienceHandler) RegisterRoutes(router *mux.Router) {
 func (h *ExperienceHandler) handleGetPublicExperience(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetPATUserIDFromContext(r.Context())
 
-	experiences, err := h.experienceStore.GetExperiences(userID)
+	experiences, err := h.experienceStore.GetExperiences(userID, 1000, 0)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return

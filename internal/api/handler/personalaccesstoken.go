@@ -48,17 +48,37 @@ func (h *PersonalAccessTokenHandler) RegisterRoutes(router *mux.Router) {
 func (h *PersonalAccessTokenHandler) handleViewPATs(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserIDFromContext(r.Context())
 
-	pats, err := h.patStore.GetPATs(userID)
+	limit := 20
+	offset := 0
+	query := r.URL.Query()
+	if l := query.Get("limit"); l != "" {
+		limit = httputil.ParseIntOrDefault(l, 20)
+	}
+	if o := query.Get("offset"); o != "" {
+		offset = httputil.ParseIntOrDefault(o, 0)
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	pats, err := h.patStore.GetPATs(userID, limit, offset)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	resp := PATListResponse{
-		Message: "Personal access tokens fetched successfully",
-		PATs:    pats,
+	total, err := h.patStore.GetTokenCountByUserID(userID)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
 	}
 
+	resp := personalaccesstoken.PaginatedPATResponse{
+		Data: pats,
+	}
+	resp.Pagination.Limit = limit
+	resp.Pagination.Offset = offset
+	resp.Pagination.Total = total
 	httputil.WriteJSON(w, http.StatusOK, resp)
 }
 

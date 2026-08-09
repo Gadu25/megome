@@ -27,12 +27,24 @@ type DashboardResponse struct {
 	Data    DasboardData `json:"data"`
 }
 
+type ActivityResponse struct {
+	Message string                   `json:"message"`
+	Data    []apilog.DashboardActivity `json:"data"`
+}
+
+type UsageStatsResponse struct {
+	Message string              `json:"message"`
+	Data    []apilog.DailyUsage `json:"data"`
+}
+
 func NewDashboardHandler(userStore *user.Repository, patStore *personalaccesstoken.Repository, apiUsageLogStore *apilog.Repository) *DashboardHandler {
 	return &DashboardHandler{userStore: userStore, patStore: patStore, apiUsageLogStore: apiUsageLogStore}
 }
 
 func (h *DashboardHandler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/dashboard/overview", middleware.WithJWTAuth(h.handleViewDasboardOverview, h.userStore))
+	router.HandleFunc("/dashboard/activity", middleware.WithJWTAuth(h.handleViewActivity, h.userStore)).Methods("GET")
+	router.HandleFunc("/dashboard/usage-stats", middleware.WithJWTAuth(h.handleViewUsageStats, h.userStore)).Methods("GET")
 }
 
 func (h *DashboardHandler) handleViewDasboardOverview(w http.ResponseWriter, r *http.Request) {
@@ -61,5 +73,47 @@ func (h *DashboardHandler) handleViewDasboardOverview(w http.ResponseWriter, r *
 		Data:    dashData,
 	}
 
+	httputil.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *DashboardHandler) handleViewActivity(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserIDFromContext(r.Context())
+
+	limit := 20
+	if l := r.URL.Query().Get("limit"); l != "" {
+		limit = httputil.ParseIntOrDefault(l, 20)
+	}
+
+	activities, err := h.apiUsageLogStore.GetRecentActivity(userID, limit)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	resp := ActivityResponse{
+		Message: "Recent activity fetched successfully",
+		Data:    activities,
+	}
+	httputil.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *DashboardHandler) handleViewUsageStats(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserIDFromContext(r.Context())
+
+	days := 30
+	if d := r.URL.Query().Get("days"); d != "" {
+		days = httputil.ParseIntOrDefault(d, 30)
+	}
+
+	usages, err := h.apiUsageLogStore.GetDailyUsage(userID, days)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	resp := UsageStatsResponse{
+		Message: "Daily usage stats fetched successfully",
+		Data:    usages,
+	}
 	httputil.WriteJSON(w, http.StatusOK, resp)
 }

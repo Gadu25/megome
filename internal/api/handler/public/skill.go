@@ -42,7 +42,7 @@ func (h *SkillHandler) RegisterRoutes(router *mux.Router) {
 func (h *SkillHandler) handleGetPublicSkill(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetPATUserIDFromContext(r.Context())
 
-	skills, err := h.skillStore.GetSkills(userID)
+	skills, err := h.skillStore.GetSkills(userID, 1000, 0)
 
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)

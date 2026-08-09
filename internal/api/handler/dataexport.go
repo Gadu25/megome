@@ -71,19 +71,19 @@ func (h *DataExportHandler) handleExport(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	skills, err := h.skillStore.GetSkills(userID)
+	skills, err := h.skillStore.GetSkills(userID, 1000, 0)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	experiences, err := h.experienceStore.GetExperiences(userID)
+	experiences, err := h.experienceStore.GetExperiences(userID, 1000, 0)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 
-	education, err := h.educationStore.GetEducations(userID)
+	education, err := h.educationStore.GetEducations(userID, 1000, 0)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return
@@ -95,7 +95,7 @@ func (h *DataExportHandler) handleExport(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	certifications, err := h.certificationStore.GetCertifications(userID)
+	certifications, err := h.certificationStore.GetCertifications(userID, 1000, 0)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return

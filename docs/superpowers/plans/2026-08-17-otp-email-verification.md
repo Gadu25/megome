@@ -1454,29 +1454,38 @@ cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification
 ### Task 11: Fix all pre-existing frontend lint errors
 
 **Files:**
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/app/(auth)/auth/reset-password/page.tsx`
 - `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/components/ui/modal/Modal.tsx`
 - `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/components/ui/rich-editor/RichEditor.tsx`
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/components/ui/Sidebar.tsx`
 - `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/components/ui/ThemeToggle.tsx`
 - `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/features/ai/components/AiAssistModal.tsx`
 - `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/features/ai/components/AiStatusBanner.tsx`
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/features/auth/components/AuthForm.tsx`
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/features/profile/components/TopProfile.tsx`
 - `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/features/project/components/ProjectWizard.tsx`
 - `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/utils/api/withRequest.ts`
 
 **Context:**
 - Baseline `npm run lint` reports 15 errors + 70 warnings. Fix the 15 ERRORS so `npm run lint` exits 0. Warnings may remain.
-- Error inventory (from `npx eslint .` at commit `35a5a1e`):
-  - `components/ui/modal/Modal.tsx`: 3× `@typescript-eslint/no-explicit-any` (lines 7, 8, 11).
-  - `components/ui/rich-editor/RichEditor.tsx`: 5× react-hooks (`setState` synchronously in effect lines 14, 22, 29, 37; refs during render line 40) + `@typescript-eslint/no-explicit-any` (96, 159, 195) + 2× `react/no-unescaped-entities` (150). Fix via React Compiler-safe patterns (wrap `setState` in event handlers; gate with layout effect or derive state; hoist ref reads into effects/events; replace `any` with specific types; escape `"` as `&quot;` in JSX text).
-  - `components/ui/ThemeToggle.tsx`: 1× `no-explicit-any` (22).
-  - `features/ai/components/AiAssistModal.tsx`: 1× `no-explicit-any` (56).
-  - `features/ai/components/AiStatusBanner.tsx`: 1× `no-explicit-any` (7).
-  - `features/project/components/ProjectWizard.tsx`: `no-explicit-any` (line 96).
-  - `utils/api/withRequest.ts`: 2× `no-explicit-any` (7, 8).
+- Error inventory (from `npx eslint .` at commit `35a5a1e`; regenerated via path-aware scan):
+  - `app/(auth)/auth/reset-password/page.tsx`: 1× `no-explicit-any` (56).
+  - `components/ui/modal/Modal.tsx`: 1× react-hooks set-state-in-effect (37).
+  - `components/ui/rich-editor/RichEditor.tsx`: 1× react-hooks refs-during-render (40).
+  - `components/ui/Sidebar.tsx`: 1× `no-explicit-any` (22).
+  - `components/ui/ThemeToggle.tsx`: 1× react-hooks set-state-in-effect (14).
+  - `features/ai/components/AiAssistModal.tsx`: 1× react-hooks set-state-in-effect (29).
+  - `features/ai/components/AiStatusBanner.tsx`: 1× react-hooks set-state-in-effect (22).
+  - `features/auth/components/AuthForm.tsx`: 1× `no-explicit-any` (96, in `handleAction`'s catch — note Task 9 may already have touched this file; fix whatever `any` remains).
+  - `features/profile/components/TopProfile.tsx`: 2× `react/no-unescaped-entities` (150) — escape `"` as `&quot;` in JSX text.
+  - `features/project/components/ProjectWizard.tsx`: 2× `no-explicit-any` (159, 195).
+  - `utils/api/withRequest.ts`: 3× `no-explicit-any` (7, 8, 11).
+- Fix via React Compiler-safe patterns (wrap `setState` in event handlers; gate with layout effect or derive state; hoist ref reads into effects/events; replace `any` with specific types; escape `"` as `&quot;` in JSX text).
 - Keep runtime behavior identical. No `eslint-disable` comments.
 
 - [ ] **Step 1: Fix the errors**
 
-Fix each `no-explicit-any` with a proper type (`unknown`, `Record<string, unknown>`, or a specific interface). For react-hooks errors, restructure so state updates happen in event handlers (or via an effect reading a changed dependency) rather than synchronously during render; read refs only inside effects/handlers. Re-escape the quotes on RichEditor.tsx:150.
+Fix each `no-explicit-any` with a proper type (`unknown`, `Record<string, unknown>`, or a specific interface). For react-hooks errors, restructure so state updates happen in event handlers (or via an effect reading a changed dependency) rather than synchronously during render; read refs only inside effects/handlers. Re-escape the quotes on TopProfile.tsx:150.
 
 - [ ] **Step 2: Verify lint passes**
 
@@ -1490,7 +1499,7 @@ Expected: build succeeds.
 
 - [ ] **Step 4: Commit**
 
-`cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification && git add components/ui/modal/Modal.tsx components/ui/rich-editor/RichEditor.tsx components/ui/ThemeToggle.tsx features/ai/components/AiAssistModal.tsx features/ai/components/AiStatusBanner.tsx features/project/components/ProjectWizard.tsx utils/api/withRequest.ts && git commit -m "fix(lint): resolve pre-existing eslint errors across UI and ai components"`
+`cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification && git add "app/(auth)/auth/reset-password/page.tsx" components/ui/modal/Modal.tsx components/ui/rich-editor/RichEditor.tsx components/ui/Sidebar.tsx components/ui/ThemeToggle.tsx features/ai/components/AiAssistModal.tsx features/ai/components/AiStatusBanner.tsx features/auth/components/AuthForm.tsx features/profile/components/TopProfile.tsx features/project/components/ProjectWizard.tsx utils/api/withRequest.ts && git commit -m "fix(lint): resolve pre-existing eslint errors across UI and ai components"`
 
 ### Task 12: End-to-end verification
 

@@ -51,8 +51,9 @@ Mirror of `internal/domain/passwordforgot`:
 - `model.go` — `EmailVerificationStore` interface:
   - `SaveOTP(userId int, email string, otpHash string, exp time.Time) error`
   - `LastOTPSentAt(userId int) (time.Time, error)` — for the resend cooldown
+  - `DeleteOTPs(userId int) error` — removes all OTP rows (used by resend and by `MarkVerified`)
   - `VerifyOTP(email string, otpHash string) (int, error)` — returns userId, rejects invalid/expired/used codes
-  - `MarkVerified(userId int) error` — sets `users.emailVerifiedAt = NOW()`, marks the OTP used, and clears old OTP rows in a transaction
+  - `MarkVerified(userId int) error` — in a transaction: sets `users.emailVerifiedAt = NOW()` and calls `DeleteOTPs(userId)`
 - `repository.go` — OTP is hashed with SHA-256 before storage (same approach as `password_reset_tokens`). `VerifyOTP` scans by `email + otpHash`, enforces `usedAt IS NULL` and `expiresAt > NOW()`.
 
 ### OTP generation
@@ -63,8 +64,8 @@ Mirror of `internal/domain/passwordforgot`:
 
 - `handleRegister` (modified): after `CreateUser`, generate + hash + `SaveOTP`, then `SendVerifyEmail`. Responds `201 { success: true, message: "verification code sent to your email", email }`. **No tokens issued at registration.**
 - `handleVerifyEmail` (new, `POST /auth/verify-email`): payload `{ email, otp }`. Validates, calls `VerifyOTP` + `MarkVerified`, then `getTokens(userId)` and responds with the standard `AuthResponse` (tokens) — auto-login.
-- `handleResendOTP` (new, `POST /auth/resend-otp`): payload `{ email }`. Loads user; 404 if missing; 400 if already verified. Enforces 60s cooldown via `LastOTPSentAt` (409 with a `retryAfterSeconds` value otherwise). Invalidates previous OTPs, saves a fresh OTP, sends the email.
-- `handleLogin` (modified): after password check, if `emailVerifiedAt IS NULL` → `403 { error: "email not verified" }`.
+- `handleResendOTP` (new, `POST /auth/resend-otp`): payload `{ email }`. Loads user; 404 if missing; 400 if already verified. Enforces 60s cooldown via `LastOTPSentAt` (409 with a `retryAfterSeconds` value otherwise). Calls `DeleteOTPs`, saves a fresh OTP, sends the email.
+- `handleLogin` (modified): after password check, if `emailVerifiedAt IS NULL` → `403 { error: "email not verified", email: <user email> }` so the frontend can route the user to verification.
 - Google OAuth creation (`handleGoogleCallback`): set `emailVerifiedAt = NOW()` when creating a new user via OAuth.
 
 Payload additions in `internal/domain/user/model.go`:
@@ -99,12 +100,12 @@ Payload additions in `internal/domain/user/model.go`:
 
 ### Login flow for unverified users
 
-- When login returns `403 "email not verified"`, `AuthForm` shows the toast/error from `withRequest`. (Register is the primary entry point; email field on verify page is editable to cover login-triggered cases.)
+- When login returns `403 "email not verified"` (with `email` in the payload), `AuthForm` redirects to `/auth/verify-email?email=<email>` so the user can complete verification. Errors from the request are still surfaced via `withRequest` for other failures.
 
 ## Error Handling
 
 - Backend errors flow through `httputil.WriteError` → `{ error: "..." }`; proxy routes map to `{ success: false, message }`; client throws via `handleResponse`; UI surfaces via `withRequest`.
-- Specific cases: wrong/expired OTP → 400 with clear message; resend too soon → 409 with `retryAfterSeconds`; login while unverified → 403.
+- Specific cases: wrong/expired OTP → 400 with clear message; resend too soon → 409 with `retryAfterSeconds`; login while unverified → 403 with the user's `email`.
 
 ## Security
 

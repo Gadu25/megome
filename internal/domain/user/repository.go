@@ -3,6 +3,7 @@ package user
 import (
 	"database/sql"
 	"fmt"
+	"time"
 )
 
 type Repository struct {
@@ -14,7 +15,7 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 func (s *Repository) GetUserByEmail(email string) (*User, error) {
-	rows, err := s.db.Query("SELECT id, username, email, password, createdAt FROM users WHERE email = ?", email)
+	rows, err := s.db.Query("SELECT id, username, email, password, emailVerifiedAt, createdAt FROM users WHERE email = ?", email)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +36,7 @@ func (s *Repository) GetUserByEmail(email string) (*User, error) {
 }
 
 func (s *Repository) GetUserByEmailOrUsername(input string) (*User, error) {
-	rows, err := s.db.Query("SELECT * FROM users WHERE email = ? OR username = ?", input, input)
+	rows, err := s.db.Query("SELECT id, username, email, password, emailVerifiedAt, createdAt FROM users WHERE email = ? OR username = ?", input, input)
 	if err != nil {
 		return nil, err
 	}
@@ -63,6 +64,7 @@ func scanRowIntoUser(rows *sql.Rows) (*User, error) {
 		&user.Username,
 		&user.Email,
 		&user.Password,
+		&user.EmailVerifiedAt,
 		&user.CreatedAt,
 	)
 
@@ -74,7 +76,7 @@ func scanRowIntoUser(rows *sql.Rows) (*User, error) {
 }
 
 func (s *Repository) GetUserByID(id int) (*User, error) {
-	rows, err := s.db.Query("SELECT * FROM users WHERE id = ?", id)
+	rows, err := s.db.Query("SELECT id, username, email, password, emailVerifiedAt, createdAt FROM users WHERE id = ?", id)
 	if err != nil {
 		return nil, err
 	}
@@ -176,6 +178,11 @@ func (s *Repository) CreateOAuthAccount(
 		account.Email,
 	)
 
+	return err
+}
+
+func (s *Repository) MarkEmailVerified(id int) error {
+	_, err := s.db.Exec("UPDATE users SET emailVerifiedAt = ? WHERE id = ?", time.Now(), id)
 	return err
 }
 

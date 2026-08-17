@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"megome/internal/config"
@@ -177,6 +178,10 @@ func (h *UserHandler) handleVerifyEmail(w http.ResponseWriter, r *http.Request) 
 
 	userId, err := h.emailVerification.VerifyOTP(payload.Email, otpHash)
 	if err != nil {
+		if errors.Is(err, emailverification.ErrTooManyAttempts) {
+			httputil.WriteError(w, http.StatusTooManyRequests, err)
+			return
+		}
 		httputil.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
@@ -503,6 +508,13 @@ func (h *UserHandler) handleGoogleCallback(
 			)
 			return
 		}
+	}
+
+	// Mark email as verified for all Google OAuth users (idempotent).
+	// Covers new users and existing email/password users linking Google.
+	if err := h.userStore.MarkEmailVerified(u.ID); err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	accessToken, refreshToken, err := h.getTokens(

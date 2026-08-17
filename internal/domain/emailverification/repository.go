@@ -7,6 +7,7 @@ import (
 )
 
 var ErrInvalidOTP = errors.New("invalid or expired verification code")
+var ErrTooManyAttempts = errors.New("too many failed attempts, a new code has been sent")
 
 type Repository struct {
 	db *sql.DB
@@ -46,15 +47,18 @@ func (r *Repository) DeleteOTPs(userId int) error {
 
 func (r *Repository) VerifyOTP(email string, otpHash string) (int, error) {
 	var userId int
+	var storedHash string
 	var expiresAt time.Time
 	var usedAt sql.NullTime
+	var failedAttempts int
 
 	err := r.db.QueryRow(`
-		SELECT userId, expiresAt, usedAt
+		SELECT userId, otpHash, expiresAt, usedAt, failedAttempts
 		FROM email_verification_otps
-		WHERE email = ? AND otpHash = ?
+		WHERE email = ?
+		ORDER BY createdAt DESC
 		LIMIT 1
-	`, email, otpHash).Scan(&userId, &expiresAt, &usedAt)
+	`, email).Scan(&userId, &storedHash, &expiresAt, &usedAt, &failedAttempts)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return 0, ErrInvalidOTP
@@ -67,6 +71,27 @@ func (r *Repository) VerifyOTP(email string, otpHash string) (int, error) {
 	}
 
 	if time.Now().After(expiresAt) {
+		return 0, ErrInvalidOTP
+	}
+
+	if storedHash != otpHash {
+		_, updateErr := r.db.Exec(`
+			UPDATE email_verification_otps
+			SET failedAttempts = failedAttempts + 1
+			WHERE email = ?
+		`, email)
+		if updateErr != nil {
+			return 0, updateErr
+		}
+
+		if failedAttempts+1 >= MaxOTPAttempts {
+			_, deleteErr := r.db.Exec("DELETE FROM email_verification_otps WHERE email = ?", email)
+			if deleteErr != nil {
+				return 0, deleteErr
+			}
+			return 0, ErrTooManyAttempts
+		}
+
 		return 0, ErrInvalidOTP
 	}
 

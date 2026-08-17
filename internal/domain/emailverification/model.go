@@ -3,8 +3,9 @@ package emailverification
 import "time"
 
 const (
-	OTPExpiry      = 10 * time.Minute
-	ResendCooldown = 60 * time.Second
+	OTPExpiry       = 10 * time.Minute
+	ResendCooldown  = 60 * time.Second
+	MaxOTPAttempts  = 5
 )
 
 type EmailVerificationStore interface {

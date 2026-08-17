@@ -121,12 +121,8 @@ Payload additions in `internal/domain/user/model.go`:
 - Frontend: `npm run lint`, `npx tsc --noEmit`, `npm run build`.
 - Manual: register → receive OTP → wrong code rejected → correct code logs in and lands on dashboard/profile-setup; resend respects cooldown; login blocked before verification; Google OAuth unaffected.
 
-## Known Limitations (deferred — reviewed 2026-08-17, decision: defer with documented risk)
+## Known Limitations (resolved 2026-08-17)
 
-These findings came out of the final whole-branch review and were deliberately deferred by the team. Each is documented with the recommended fix so it can be addressed in a follow-up.
+1. **OTP verification brute-force (Critical) — RESOLVED.** `VerifyOTP` now tracks `failedAttempts` per OTP row. After 5 wrong guesses the row is deleted and `ErrTooManyAttempts` is returned (HTTP 429); the user must request a new code via resend. New migration `20260817000002` adds the column and indexes on `(email, otpHash)` and `(userId)`.
 
-1. **No rate limiting / attempt lockout on OTP verification (Critical).** `POST /auth/verify-email` is unauthenticated and has no attempt counter, lockout, or per-IP throttle (`internal/api/handler/user.go`, `internal/domain/emailverification/repository.go`). A 6-digit code is a 1,000,000-value space; `resend-otp` (also unauthenticated) lets an attacker extend the verification window indefinitely, so a sustained brute force can guess the code and receive fresh access+refresh tokens — full account takeover of an unverified account.
-   - *Recommended fix:* add `failedAttempts INT NOT NULL DEFAULT 0` to `email_verification_otps`; on mismatch, increment it and invalidate the row (forcing a resend) once it exceeds a small threshold (e.g. 5-10); optionally add a per-IP throttle in the handler; add `(email, otpHash)` and `(userId)` indexes while in the migration.
-
-2. **Google OAuth account-linking does not auto-verify (Important).** When a user who registered by email/password later signs in with Google, the OAuth account is linked and tokens are issued, but `emailVerifiedAt` is never set (`internal/api/handler/user.go`, account-linking branch). Google has verified the email (`googleUser.VerifiedEmail`), so this is not an unauthorized-access hole — but the account stays permanently "unverified" for password login (403 until OTP verification is completed). This state inconsistency also means the un-gated refresh endpoint can mint tokens for a user who is unverified for password auth.
-   - *Recommended fix:* call `userStore.MarkEmailVerified(u.ID)` in the account-linking branch too (Google-verified email).
+2. **Google OAuth account-linking not auto-verifying (Important) — RESOLVED.** `handleGoogleCallback` now calls `userStore.MarkEmailVerified(u.ID)` unconditionally before issuing tokens, covering both new Google users and existing email/password users linking their Google account.

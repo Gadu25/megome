@@ -2,10 +2,14 @@ package handler
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"megome/internal/config"
+	"megome/internal/domain/emailverification"
 	"megome/internal/domain/passwordforgot"
 	"megome/internal/domain/profile"
 	"megome/internal/domain/refreshtoken"
@@ -23,15 +27,16 @@ import (
 )
 
 type UserHandler struct {
-	userStore      *user.Repository
-	profileStore   *profile.Repository
-	refreshStore   *refreshtoken.Repository
-	emailService   *mailer.Service
-	passwordForgot *passwordforgot.Repository
+	userStore         *user.Repository
+	profileStore      *profile.Repository
+	refreshStore      *refreshtoken.Repository
+	emailService      *mailer.Service
+	passwordForgot    *passwordforgot.Repository
+	emailVerification *emailverification.Repository
 }
 
-func NewUserHandler(userStore *user.Repository, profileStore *profile.Repository, refreshStore *refreshtoken.Repository, emailService *mailer.Service, passwordForgot *passwordforgot.Repository) *UserHandler {
-	return &UserHandler{userStore: userStore, profileStore: profileStore, refreshStore: refreshStore, emailService: emailService, passwordForgot: passwordForgot}
+func NewUserHandler(userStore *user.Repository, profileStore *profile.Repository, refreshStore *refreshtoken.Repository, emailService *mailer.Service, passwordForgot *passwordforgot.Repository, emailVerification *emailverification.Repository) *UserHandler {
+	return &UserHandler{userStore: userStore, profileStore: profileStore, refreshStore: refreshStore, emailService: emailService, passwordForgot: passwordForgot, emailVerification: emailVerification}
 }
 
 func (h *UserHandler) RegisterRoutes(router *mux.Router) {
@@ -43,6 +48,8 @@ func (h *UserHandler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/auth/google/callback", h.handleGoogleCallback).Methods("GET")
 	router.HandleFunc("/auth/forgot-pass", h.handleForgotPassword).Methods("POST")
 	router.HandleFunc("/auth/change-forgot-pass", h.handleResetPassword).Methods("POST")
+	router.HandleFunc("/auth/verify-email", h.handleVerifyEmail).Methods("POST")
+	router.HandleFunc("/auth/resend-otp", h.handleResendOTP).Methods("POST")
 }
 
 func (h *UserHandler) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -65,6 +72,14 @@ func (h *UserHandler) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	if !auth.ComparePasswords(u.Password, []byte(payload.Password)) {
 		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid email or password"))
+		return
+	}
+
+	if u.EmailVerifiedAt == nil {
+		httputil.WriteJSON(w, http.StatusForbidden, map[string]any{
+			"error": "email not verified",
+			"email": u.Email,
+		})
 		return
 	}
 
@@ -116,7 +131,67 @@ func (h *UserHandler) handleRegister(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	at, rt, err := h.getTokens(u.ID)
+	otp, err := auth.GenerateOTP()
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	hash := sha256.Sum256([]byte(otp))
+	otpHash := hex.EncodeToString(hash[:])
+
+	err = h.emailVerification.SaveOTP(u.ID, u.Email, otpHash, time.Now().Add(emailverification.OTPExpiry))
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	err = h.emailService.SendVerifyEmail(u.Email, otp)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusCreated, map[string]any{
+		"success": true,
+		"message": "verification code sent to your email",
+		"email":   u.Email,
+	})
+}
+
+func (h *UserHandler) handleVerifyEmail(w http.ResponseWriter, r *http.Request) {
+	var payload user.VerifyEmailPayload
+
+	if err := httputil.ParseJSON(r, &payload); err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := validator.Validate.Struct(payload); err != nil {
+		errors := err.(playvalidator.ValidationErrors)
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload %v", errors))
+		return
+	}
+
+	hash := sha256.Sum256([]byte(payload.OTP))
+	otpHash := hex.EncodeToString(hash[:])
+
+	userId, err := h.emailVerification.VerifyOTP(payload.Email, otpHash)
+	if err != nil {
+		if errors.Is(err, emailverification.ErrTooManyAttempts) {
+			httputil.WriteError(w, http.StatusTooManyRequests, err)
+			return
+		}
+		httputil.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := h.emailVerification.MarkVerified(userId); err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	at, rt, err := h.getTokens(userId)
 	if err != nil {
 		httputil.WriteError(w, http.StatusInternalServerError, err)
 		return
@@ -124,11 +199,81 @@ func (h *UserHandler) handleRegister(w http.ResponseWriter, r *http.Request) {
 
 	resp := refreshtoken.AuthResponse{
 		Success:      true,
-		Message:      "Your account is successfully registered!",
+		Message:      "Email verified successfully",
 		AccessToken:  at,
 		RefreshToken: rt,
 	}
-	httputil.WriteJSON(w, http.StatusCreated, resp)
+	httputil.WriteJSON(w, http.StatusOK, resp)
+}
+
+func (h *UserHandler) handleResendOTP(w http.ResponseWriter, r *http.Request) {
+	var payload user.ResendOTPPayload
+
+	if err := httputil.ParseJSON(r, &payload); err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := validator.Validate.Struct(payload); err != nil {
+		errors := err.(playvalidator.ValidationErrors)
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload %v", errors))
+		return
+	}
+
+	u, err := h.userStore.GetUserByEmail(payload.Email)
+	if err != nil {
+		httputil.WriteError(w, http.StatusNotFound, fmt.Errorf("user not found"))
+		return
+	}
+
+	if u.EmailVerifiedAt != nil {
+		httputil.WriteError(w, http.StatusBadRequest, fmt.Errorf("email already verified"))
+		return
+	}
+
+	lastSent, err := h.emailVerification.LastOTPSentAt(u.ID)
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if remaining := emailverification.RemainingCooldown(lastSent, time.Now(), emailverification.ResendCooldown); remaining > 0 {
+		httputil.WriteJSON(w, http.StatusConflict, map[string]any{
+			"error":             "please wait before requesting another code",
+			"retryAfterSeconds": remaining,
+		})
+		return
+	}
+
+	otp, err := auth.GenerateOTP()
+	if err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	hash := sha256.Sum256([]byte(otp))
+	otpHash := hex.EncodeToString(hash[:])
+
+	if err := h.emailVerification.DeleteOTPs(u.ID); err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if err := h.emailVerification.SaveOTP(u.ID, u.Email, otpHash, time.Now().Add(emailverification.OTPExpiry)); err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if err := h.emailService.SendVerifyEmail(u.Email, otp); err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	httputil.WriteJSON(w, http.StatusOK, map[string]any{
+		"success": true,
+		"message": "verification code sent to your email",
+		"email":   u.Email,
+	})
 }
 
 func (h *UserHandler) handleLogout(w http.ResponseWriter, r *http.Request) {
@@ -315,6 +460,16 @@ func (h *UserHandler) handleGoogleCallback(
 				},
 			)
 
+			if err != nil {
+				httputil.WriteError(w, http.StatusInternalServerError, err)
+				return
+			}
+			err = h.userStore.MarkEmailVerified(u.ID)
+			if err != nil {
+				httputil.WriteError(w, http.StatusInternalServerError, err)
+				return
+			}
+
 			err = h.profileStore.UpsertOAuthProfile(
 				profile.Profile{
 					UserID:       u.ID,
@@ -353,6 +508,13 @@ func (h *UserHandler) handleGoogleCallback(
 			)
 			return
 		}
+	}
+
+	// Mark email as verified for all Google OAuth users (idempotent).
+	// Covers new users and existing email/password users linking Google.
+	if err := h.userStore.MarkEmailVerified(u.ID); err != nil {
+		httputil.WriteError(w, http.StatusInternalServerError, err)
+		return
 	}
 
 	accessToken, refreshToken, err := h.getTokens(

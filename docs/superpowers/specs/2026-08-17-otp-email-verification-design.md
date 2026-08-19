@@ -120,3 +120,9 @@ Payload additions in `internal/domain/user/model.go`:
 - Backend: `go build ./...` and `make test`.
 - Frontend: `npm run lint`, `npx tsc --noEmit`, `npm run build`.
 - Manual: register → receive OTP → wrong code rejected → correct code logs in and lands on dashboard/profile-setup; resend respects cooldown; login blocked before verification; Google OAuth unaffected.
+
+## Known Limitations (resolved 2026-08-17)
+
+1. **OTP verification brute-force (Critical) — RESOLVED.** `VerifyOTP` now tracks `failedAttempts` per OTP row. After 5 wrong guesses the row is deleted and `ErrTooManyAttempts` is returned (HTTP 429); the user must request a new code via resend. New migration `20260817000002` adds the column and indexes on `(email, otpHash)` and `(userId)`.
+
+2. **Google OAuth account-linking not auto-verifying (Important) — RESOLVED.** `handleGoogleCallback` now calls `userStore.MarkEmailVerified(u.ID)` unconditionally before issuing tokens, covering both new Google users and existing email/password users linking their Google account.

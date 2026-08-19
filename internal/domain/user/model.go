@@ -9,14 +9,16 @@ type UserStore interface {
 	CreateUser(User) (*User, error)
 	GetOAuthAccount(provider string, providerUserID string) (*OAuthAccount, error)
 	CreateOAuthAccount(account OAuthAccount) error
+	MarkEmailVerified(id int) error
 }
 
 type User struct {
-	ID        int       `json:"id"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	Password  string    `json:"password"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID              int        `json:"id"`
+	Username        string     `json:"username"`
+	Email           string     `json:"email"`
+	Password        string     `json:"password"`
+	EmailVerifiedAt *time.Time `json:"emailVerifiedAt"`
+	CreatedAt       time.Time  `json:"createdAt"`
 }
 
 type RegisterUserPayload struct {
@@ -37,6 +39,15 @@ type ForgotPassChangePayload struct {
 
 type ForgotPassPayload struct {
 	Email string `json:"email"`
+}
+
+type VerifyEmailPayload struct {
+	Email string `json:"email" validate:"required,email"`
+	OTP   string `json:"otp" validate:"required,len=6"`
+}
+
+type ResendOTPPayload struct {
+	Email string `json:"email" validate:"required,email"`
 }
 
 type OAuthAccount struct {

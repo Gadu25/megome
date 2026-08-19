@@ -35,3 +35,27 @@ func (s *Service) SendResetPassword(to string, resetURL string) error {
 		ContentType: "text/html",
 	})
 }
+
+type VerifyEmailData struct {
+	OTP              string
+	ExpiresInMinutes int
+	Year             int
+}
+
+func (s *Service) SendVerifyEmail(to string, otp string) error {
+	body, err := s.renderer.Render("verify_email.html", VerifyEmailData{
+		OTP:              otp,
+		ExpiresInMinutes: 10,
+		Year:             time.Now().Year(),
+	})
+	if err != nil {
+		return err
+	}
+
+	return s.smtp.Send(Email{
+		To:          []string{to},
+		Subject:     "Verify your email",
+		Body:        body,
+		ContentType: "text/html",
+	})
+}

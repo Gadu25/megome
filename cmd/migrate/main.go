@@ -26,6 +26,7 @@ func main() {
 		Net:                  "tcp",
 		AllowNativePasswords: true,
 		ParseTime:            true,
+		MultiStatements:      true,
 	})
 	if err != nil {
 		log.Fatal(err)

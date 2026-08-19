@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Backend repo: `/home/alexanderudag/dev/megome/megome`; frontend repo: `/home/alexanderudag/dev/megome/megome-front`. Commit in the repo each task belongs to.
+- Backend repo: `/home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification`; frontend repo: `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification`. Commit in the repo each task belongs to.
 - Go module is `megome`; imports use `megome/...` prefixes.
 - No new Go or npm dependencies. OTP generation uses `crypto/rand`; hashing uses `crypto/sha256` (same as `password_reset_tokens`).
 - Follow the existing password-reset pattern exactly: `internal/domain/passwordforgot` (repository), `internal/pkg/mailer` (template + service), handlers in `internal/api/handler/user.go`.
@@ -20,8 +20,9 @@
 - OTP is stored ONLY as a SHA-256 hex hash. Never return or log the plaintext OTP.
 - Unverified accounts cannot log in (`403 {error: "email not verified", email}`). Google OAuth users and pre-existing users are auto-verified.
 - The `verify-email` endpoint performs auto-login (issues access + refresh tokens via the existing `getTokens`).
-- Backend verify command: `go build ./... && go vet ./... && go test ./...` (run in `/home/alexanderudag/dev/megome/megome`).
-- Frontend verify command: `npm run lint && npm run build` (run in `/home/alexanderudag/dev/megome/megome-front`).
+- Backend verify command: `go build ./... && go vet ./... && go test ./...` (run in `/home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification`).
+- Frontend verify command: `npm run lint && npm run build` (run in `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification`). Lint MUST exit 0 (zero errors); warnings are tolerated.
+- Pre-existing lint debt (15 errors) is in scope and fixed by Task 11.
 - Migration timestamp for this feature: `20260817000001` (must be lexically after existing `20260806000007`).
 
 ---
@@ -71,13 +72,13 @@ ALTER TABLE users DROP COLUMN emailVerifiedAt;
 
 - [ ] **Step 3: Verify**
 
-Run: `cd /home/alexanderudag/dev/megome/megome && go run cmd/migrate/main.go up`
+Run: `cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && go run cmd/migrate/main.go up`
 Expected: applies the new migration (requires a running MySQL with `.env` configured; if no DB is available, review both files for correctness and continue — `make migrate-up` will apply it later).
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /home/alexanderudag/dev/megome/megome && git add cmd/migrate/migrations/20260817000001_add-email-verification.up.sql cmd/migrate/migrations/20260817000001_add-email-verification.down.sql && git commit -m "feat: add email verification migration (users.emailVerifiedAt + otps table)"
+cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && git add cmd/migrate/migrations/20260817000001_add-email-verification.up.sql cmd/migrate/migrations/20260817000001_add-email-verification.down.sql && git commit -m "feat: add email verification migration (users.emailVerifiedAt + otps table)"
 ```
 
 ---
@@ -130,7 +131,7 @@ func TestGenerateOTPNumeric(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /home/alexanderudag/dev/megome/megome && go test ./internal/pkg/auth/...`
+Run: `cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && go test ./internal/pkg/auth/...`
 Expected: FAIL with `undefined: GenerateOTP`.
 
 - [ ] **Step 3: Write the implementation**
@@ -159,13 +160,13 @@ func GenerateOTP() (string, error) {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `cd /home/alexanderudag/dev/megome/megome && go test ./internal/pkg/auth/...`
+Run: `cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && go test ./internal/pkg/auth/...`
 Expected: PASS (`ok megome/internal/pkg/auth`).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /home/alexanderudag/dev/megome/megome && git add internal/pkg/auth/otp.go internal/pkg/auth/otp_test.go && git commit -m "feat(auth): add crypto-random 6-digit OTP generator"
+cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && git add internal/pkg/auth/otp.go internal/pkg/auth/otp_test.go && git commit -m "feat(auth): add crypto-random 6-digit OTP generator"
 ```
 
 ---
@@ -219,7 +220,7 @@ func TestVerifyEmailTemplateRenders(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /home/alexanderudag/dev/megome/megome && go test ./internal/pkg/mailer/...`
+Run: `cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && go test ./internal/pkg/mailer/...`
 Expected: FAIL with `undefined: VerifyEmailData` (and the template does not exist yet).
 
 - [ ] **Step 3: Create the template**
@@ -305,13 +306,13 @@ func (s *Service) SendVerifyEmail(to string, otp string) error {
 
 - [ ] **Step 5: Run test to verify it passes**
 
-Run: `cd /home/alexanderudag/dev/megome/megome && go test ./internal/pkg/mailer/...`
+Run: `cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && go test ./internal/pkg/mailer/...`
 Expected: PASS (`ok megome/internal/pkg/mailer`).
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /home/alexanderudag/dev/megome/megome && git add internal/pkg/mailer/templates/verify_email.html internal/pkg/mailer/service.go internal/pkg/mailer/service_test.go && git commit -m "feat(mailer): add email verification template and send method"
+cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && git add internal/pkg/mailer/templates/verify_email.html internal/pkg/mailer/service.go internal/pkg/mailer/service_test.go && git commit -m "feat(mailer): add email verification template and send method"
 ```
 
 ---
@@ -364,7 +365,7 @@ func TestRemainingCooldown(t *testing.T) {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `cd /home/alexanderudag/dev/megome/megome && go test ./internal/domain/emailverification/...`
+Run: `cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && go test ./internal/domain/emailverification/...`
 Expected: FAIL with `undefined: RemainingCooldown` (package does not exist).
 
 - [ ] **Step 3: Create `model.go`**
@@ -524,13 +525,13 @@ func (r *Repository) MarkVerified(userId int) error {
 
 - [ ] **Step 6: Run test to verify it passes**
 
-Run: `cd /home/alexanderudag/dev/megome/megome && go test ./internal/domain/emailverification/...`
+Run: `cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && go test ./internal/domain/emailverification/...`
 Expected: PASS (`ok megome/internal/domain/emailverification`).
 
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /home/alexanderudag/dev/megome/megome && git add internal/domain/emailverification && git commit -m "feat(domain): add email verification repository and cooldown helper"
+cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && git add internal/domain/emailverification && git commit -m "feat(domain): add email verification repository and cooldown helper"
 ```
 
 ---
@@ -639,13 +640,13 @@ func (s *Repository) MarkEmailVerified(id int) error {
 
 - [ ] **Step 3: Verify build and tests**
 
-Run: `cd /home/alexanderudag/dev/megome/megome && go build ./... && go vet ./... && go test ./...`
+Run: `cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && go build ./... && go vet ./... && go test ./...`
 Expected: build/vet clean; all tests PASS.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /home/alexanderudag/dev/megome/megome && git add internal/domain/user/model.go internal/domain/user/repository.go && git commit -m "feat(domain): add emailVerifiedAt to user model and mark-verified repository method"
+cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && git add internal/domain/user/model.go internal/domain/user/repository.go && git commit -m "feat(domain): add emailVerifiedAt to user model and mark-verified repository method"
 ```
 
 ---
@@ -908,13 +909,13 @@ In `internal/api/router.go`:
 
 - [ ] **Step 9: Verify build and tests**
 
-Run: `cd /home/alexanderudag/dev/megome/megome && go build ./... && go vet ./... && go test ./...`
+Run: `cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && go build ./... && go vet ./... && go test ./...`
 Expected: build/vet clean; all tests PASS.
 
 - [ ] **Step 10: Commit**
 
 ```bash
-cd /home/alexanderudag/dev/megome/megome && git add internal/api/handler/user.go internal/api/router.go && git commit -m "feat(api): add OTP email verification endpoints and gate login on verification"
+cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && git add internal/api/handler/user.go internal/api/router.go && git commit -m "feat(api): add OTP email verification endpoints and gate login on verification"
 ```
 
 ---
@@ -930,7 +931,7 @@ cd /home/alexanderudag/dev/megome/megome && git add internal/api/handler/user.go
 **Interfaces:**
 - Consumes: backend endpoints `/api/v1/auth/register`, `/api/v1/auth/login`, `/api/v1/auth/verify-email`, `/api/v1/auth/resend-otp`; `cookies` from `next/headers`.
 - Produces: `POST /api/auth/register` returns `{success, message, email}` (no cookies); `POST /api/auth/login` passes through `email` on error; `POST /api/auth/verify-email` sets `access_token`/`refresh_token` httpOnly cookies and returns `{success, user}`; `POST /api/auth/resend-otp` passes through the backend response.
-- All work in `/home/alexanderudag/dev/megome/megome-front`.
+- All work in `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification`.
 
 - [ ] **Step 1: Rewrite `register/route.ts` (stop setting cookies, pass `email`)**
 
@@ -1108,13 +1109,13 @@ export async function POST(req: Request) {
 
 - [ ] **Step 5: Verify lint**
 
-Run: `cd /home/alexanderudag/dev/megome/megome-front && npm run lint`
+Run: `cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification && npm run lint`
 Expected: lint clean.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /home/alexanderudag/dev/megome/megome-front && git add app/api/auth/register/route.ts app/api/auth/login/route.ts app/api/auth/verify-email/route.ts app/api/auth/resend-otp/route.ts && git commit -m "feat(auth): add verify-email and resend-otp proxy routes; register no longer sets cookies"
+cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification && git add app/api/auth/register/route.ts app/api/auth/login/route.ts app/api/auth/verify-email/route.ts app/api/auth/resend-otp/route.ts && git commit -m "feat(auth): add verify-email and resend-otp proxy routes; register no longer sets cookies"
 ```
 
 ---
@@ -1128,7 +1129,7 @@ cd /home/alexanderudag/dev/megome/megome-front && git add app/api/auth/register/
 **Interfaces:**
 - Consumes: `handleResponse` from `@/utils/api/handleResponse`.
 - Produces: `verifyEmailClient(email: string, otp: string)` and `resendOtpClient(email: string)`; `verifyEmailSchema` (zod: `email` valid email, `otp` exactly 6 digits).
-- All work in `/home/alexanderudag/dev/megome/megome-front`.
+- All work in `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification`.
 
 - [ ] **Step 1: Add the client functions**
 
@@ -1171,13 +1172,13 @@ export const verifyEmailSchema = z.object({
 
 - [ ] **Step 3: Verify lint**
 
-Run: `cd /home/alexanderudag/dev/megome/megome-front && npm run lint`
+Run: `cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification && npm run lint`
 Expected: lint clean.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /home/alexanderudag/dev/megome/megome-front && git add lib/api/client/auth.ts features/auth/schema.ts && git commit -m "feat(auth): add verify-email and resend-otp clients and schema"
+cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification && git add lib/api/client/auth.ts features/auth/schema.ts && git commit -m "feat(auth): add verify-email and resend-otp clients and schema"
 ```
 
 ---
@@ -1236,13 +1237,13 @@ Replace `handleRegister`:
 
 - [ ] **Step 3: Verify lint and build**
 
-Run: `cd /home/alexanderudag/dev/megome/megome-front && npm run lint && npm run build`
+Run: `cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification && npm run lint && npm run build`
 Expected: lint clean, build succeeds.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd /home/alexanderudag/dev/megome/megome-front && git add features/auth/components/AuthForm.tsx && git commit -m "feat(auth): route sign-up and unverified sign-in to email verification"
+cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification && git add features/auth/components/AuthForm.tsx && git commit -m "feat(auth): route sign-up and unverified sign-in to email verification"
 ```
 
 ---
@@ -1255,7 +1256,7 @@ cd /home/alexanderudag/dev/megome/megome-front && git add features/auth/componen
 **Interfaces:**
 - Consumes: `verifyEmailClient`, `resendOtpClient` (Task 8), `getInitClient`, `withRequest` from `@/utils/api/withRequest`, `useToast` from `@/components/ui/toast/useToast`, `Card` from `@/components/ui/Card`.
 - Produces: page at `/auth/verify-email` with email (prefilled from `?email=`, editable), 6-digit OTP input, verify button, resend button with a 60s countdown, and "Back to Sign In" link. On success it redirects to `/profile-setup` (no profile) or `/dashboard`.
-- All work in `/home/alexanderudag/dev/megome/megome-front`.
+- All work in `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification`.
 
 - [ ] **Step 1: Create the page**
 
@@ -1439,30 +1440,80 @@ export default function VerifyEmailPage() {
 
 - [ ] **Step 2: Verify lint and build**
 
-Run: `cd /home/alexanderudag/dev/megome/megome-front && npm run lint && npm run build`
+Run: `cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification && npm run lint && npm run build`
 Expected: lint clean, build succeeds.
 
 - [ ] **Step 3: Commit**
 
 ```bash
-cd /home/alexanderudag/dev/megome/megome-front && git add "app/(auth)/auth/verify-email/page.tsx" && git commit -m "feat(auth): add email verification page with resend cooldown"
+cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification && git add "app/(auth)/auth/verify-email/page.tsx" && git commit -m "feat(auth): add email verification page with resend cooldown"
 ```
 
 ---
 
-### Task 11: End-to-end verification
+### Task 11: Fix all pre-existing frontend lint errors
+
+**Files:**
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/app/(auth)/auth/reset-password/page.tsx`
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/components/ui/modal/Modal.tsx`
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/components/ui/rich-editor/RichEditor.tsx`
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/components/ui/Sidebar.tsx`
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/components/ui/ThemeToggle.tsx`
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/features/ai/components/AiAssistModal.tsx`
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/features/ai/components/AiStatusBanner.tsx`
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/features/auth/components/AuthForm.tsx`
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/features/profile/components/TopProfile.tsx`
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/features/project/components/ProjectWizard.tsx`
+- `/home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification/utils/api/withRequest.ts`
+
+**Context:**
+- Baseline `npm run lint` reports 15 errors + 70 warnings. Fix the 15 ERRORS so `npm run lint` exits 0. Warnings may remain.
+- Error inventory (from `npx eslint .` at commit `35a5a1e`; regenerated via path-aware scan):
+  - `app/(auth)/auth/reset-password/page.tsx`: 1× `no-explicit-any` (56).
+  - `components/ui/modal/Modal.tsx`: 1× react-hooks set-state-in-effect (37).
+  - `components/ui/rich-editor/RichEditor.tsx`: 1× react-hooks refs-during-render (40).
+  - `components/ui/Sidebar.tsx`: 1× `no-explicit-any` (22).
+  - `components/ui/ThemeToggle.tsx`: 1× react-hooks set-state-in-effect (14).
+  - `features/ai/components/AiAssistModal.tsx`: 1× react-hooks set-state-in-effect (29).
+  - `features/ai/components/AiStatusBanner.tsx`: 1× react-hooks set-state-in-effect (22).
+  - `features/auth/components/AuthForm.tsx`: 1× `no-explicit-any` (96, in `handleAction`'s catch — note Task 9 may already have touched this file; fix whatever `any` remains).
+  - `features/profile/components/TopProfile.tsx`: 2× `react/no-unescaped-entities` (150) — escape `"` as `&quot;` in JSX text.
+  - `features/project/components/ProjectWizard.tsx`: 2× `no-explicit-any` (159, 195).
+  - `utils/api/withRequest.ts`: 3× `no-explicit-any` (7, 8, 11).
+- Fix via React Compiler-safe patterns (wrap `setState` in event handlers; gate with layout effect or derive state; hoist ref reads into effects/events; replace `any` with specific types; escape `"` as `&quot;` in JSX text).
+- Keep runtime behavior identical. No `eslint-disable` comments.
+
+- [ ] **Step 1: Fix the errors**
+
+Fix each `no-explicit-any` with a proper type (`unknown`, `Record<string, unknown>`, or a specific interface). For react-hooks errors, restructure so state updates happen in event handlers (or via an effect reading a changed dependency) rather than synchronously during render; read refs only inside effects/handlers. Re-escape the quotes on TopProfile.tsx:150.
+
+- [ ] **Step 2: Verify lint passes**
+
+Run: `cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification && npm run lint`
+Expected: exit code 0 (no errors; warnings tolerated).
+
+- [ ] **Step 3: Verify build still passes**
+
+Run: `cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification && npm run build`
+Expected: build succeeds.
+
+- [ ] **Step 4: Commit**
+
+`cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification && git add "app/(auth)/auth/reset-password/page.tsx" components/ui/modal/Modal.tsx components/ui/rich-editor/RichEditor.tsx components/ui/Sidebar.tsx components/ui/ThemeToggle.tsx features/ai/components/AiAssistModal.tsx features/ai/components/AiStatusBanner.tsx features/auth/components/AuthForm.tsx features/profile/components/TopProfile.tsx features/project/components/ProjectWizard.tsx utils/api/withRequest.ts && git commit -m "fix(lint): resolve pre-existing eslint errors across UI and ai components"`
+
+### Task 12: End-to-end verification
 
 **Files:**
 - None (verification only).
 
 - [ ] **Step 1: Run all backend checks**
 
-Run: `cd /home/alexanderudag/dev/megome/megome && go build ./... && go vet ./... && go test ./...`
+Run: `cd /home/alexanderudag/dev/megome/megome/.worktrees/otp-email-verification && go build ./... && go vet ./... && go test ./...`
 Expected: build/vet clean, all tests PASS (including `internal/pkg/auth`, `internal/pkg/mailer`, `internal/domain/emailverification`).
 
 - [ ] **Step 2: Run all frontend checks**
 
-Run: `cd /home/alexanderudag/dev/megome/megome-front && npm run lint && npm run build`
+Run: `cd /home/alexanderudag/dev/megome/megome-front/.worktrees/otp-email-verification && npm run lint && npm run build`
 Expected: lint clean, build succeeds.
 
 - [ ] **Step 3: Manual QA checklist**

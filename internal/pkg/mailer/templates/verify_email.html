@@ -1,0 +1,44 @@
+{{ define "verify_email.html" }}
+
+<div style="background:#f4f4f5;padding:40px 16px;font-family:Arial, sans-serif;">
+
+  <!-- Card -->
+  <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:12px;padding:32px;">
+
+    <!-- Header -->
+    <h1 style="margin:0 0 12px 0;font-size:20px;font-weight:600;color:#111827;">
+      Verify your email
+    </h1>
+
+    <p style="margin:0 0 24px 0;font-size:14px;line-height:1.6;color:#6b7280;">
+      Thanks for signing up! Use the code below to verify your email address and activate your account.
+    </p>
+
+    <!-- OTP -->
+    <div style="margin:24px 0;text-align:center;background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:24px;">
+      <p style="margin:0 0 8px 0;font-size:12px;color:#6b7280;">Your verification code</p>
+      <p style="margin:0;font-size:32px;font-weight:700;letter-spacing:8px;color:#111827;">{{ .OTP }}</p>
+    </div>
+
+    <!-- Divider -->
+    <div style="height:1px;background:#e5e7eb;margin:24px 0;"></div>
+
+    <!-- Security note -->
+    <p style="margin:0 0 8px 0;font-size:12px;line-height:1.6;color:#6b7280;">
+      This code will expire in <strong>{{ .ExpiresInMinutes }} minutes</strong> for security reasons.
+    </p>
+
+    <p style="margin:0;font-size:12px;line-height:1.6;color:#6b7280;">
+      If you did not sign up for Megome, you can safely ignore this email.
+    </p>
+
+  </div>
+
+  <!-- Footer -->
+  <p style="text-align:center;margin-top:16px;font-size:11px;color:#9ca3af;">
+    © {{ .Year }} Megome. All rights reserved.
+  </p>
+
+</div>
+
+{{ end }}

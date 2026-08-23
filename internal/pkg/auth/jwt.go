@@ -60,7 +60,7 @@ func VerifyToken(tokenString string) error {
 	}
 	if claims.ExpiresAt == nil || claims.ExpiresAt.Time.Before(time.Now()) {
 		log.Println("token expired")
-		return err
+		return fmt.Errorf("token expired")
 	}
 	return nil
 }

@@ -19,6 +19,7 @@ func (s *Repository) GetUserByEmail(email string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	u := new(User)
 	for rows.Next() {
@@ -40,6 +41,7 @@ func (s *Repository) GetUserByEmailOrUsername(input string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	u := new(User)
 	for rows.Next() {
@@ -80,6 +82,7 @@ func (s *Repository) GetUserByID(id int) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	u := new(User)
 	for rows.Next() {

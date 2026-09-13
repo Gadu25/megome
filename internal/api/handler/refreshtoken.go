@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"megome/internal/config"
 	"megome/internal/domain/refreshtoken"
 	"megome/internal/pkg/httputil"
 	"net/http"
@@ -34,11 +35,11 @@ func (h *RefreshTokenHandler) handleRefresh(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	resp := refreshtoken.AuthResponse{
-		Success:      true,
-		Message:      "Token refreshed!",
-		AccessToken:  newAccessToken,
-		RefreshToken: newRefreshToken,
-	}
+	resp := refreshtoken.NewAuthResponse(
+		"Token refreshed!",
+		newAccessToken,
+		newRefreshToken,
+		config.Envs.JWTExpirationInSeconds,
+	)
 	httputil.WriteJSON(w, http.StatusOK, resp)
 }

@@ -29,7 +29,7 @@ func (s *Repository) CreateRefreshToken(userId int) (string, error) {
 		hash := sha256.Sum256([]byte(token))
 		hashStr := fmt.Sprintf("%x", hash)
 
-		expiresAt := time.Now().Add(14 * 24 * time.Hour)
+		expiresAt := time.Now().Add(RefreshTokenLifetime)
 
 		_, err = s.db.Exec("INSERT INTO refresh_tokens (userId, tokenHash, expiresAt) VALUES (?, ?, ?)",
 			userId,

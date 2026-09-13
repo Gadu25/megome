@@ -51,12 +51,12 @@ func initConfig() Config {
 		// JWTExpirationInSeconds: getEnvAsInt("JWT_EXP", 60*5),
 		JWTExpirationInSeconds: getEnvAsInt64("JWT_EXP", 1800),
 		JWTSecret:              getEnv("JWT_SECRET", ""),
-		R2AccountId:            getEnv("R2_ACCOUNT_ID", "4ee86bb26d20c0c74970845960bec979"),
-		R2AccessKeyId:          getEnv("R2_ACCESS_KEY_ID", "783e12a9c12ecd2c966fbbac42225c5d"),
-		R2SecretAccessKey:      getEnv("R2_SECRET_ACCESS_KEY", "3140e4fdea0f3ad4099205c41caf4270478eceb7cfcb5a6183f3897b90c777d4"),
-		R2Bucket:               getEnv("R2_BUCKET", "megome"),
-		R2Endpoint:             getEnv("R2_ENDPOINT", "4ee86bb26d20c0c74970845960bec979.r2.cloudflarestorage.com"),
-		R2PublicUrl:            getEnv("R2_PUBLIC_URL", "https://pub-8f00a57b78e742a3ac1da0446971e45d.r2.dev"),
+		R2AccountId:            getEnv("R2_ACCOUNT_ID", ""),
+		R2AccessKeyId:          getEnv("R2_ACCESS_KEY_ID", ""),
+		R2SecretAccessKey:      getEnv("R2_SECRET_ACCESS_KEY", ""),
+		R2Bucket:               getEnv("R2_BUCKET", ""),
+		R2Endpoint:             getEnv("R2_ENDPOINT", ""),
+		R2PublicUrl:            getEnv("R2_PUBLIC_URL", ""),
 		BackendUrl:             getEnv("BACKEND_URL", "http://localhost:8080"),
 		FrontendUrl:            getEnv("FRONTEND_URL", "http://localhost:3001"),
 		GoogleOauthClientId:    getEnv("GOOGLE_OAUTH_CLIENT_ID", ""),
@@ -105,11 +105,17 @@ func getEnvAsInt(key string, fallback int) int {
 
 func validateConfig(cfg Config) {
 	required := map[string]string{
-		"JWT_SECRET":  cfg.JWTSecret,
-		"DB_HOST":     cfg.DBHost,
-		"DB_USER":     cfg.DBUser,
-		"DB_PASSWORD": cfg.DBPassword,
-		"DB_NAME":     cfg.DBName,
+		"JWT_SECRET":            cfg.JWTSecret,
+		"DB_HOST":               cfg.DBHost,
+		"DB_USER":               cfg.DBUser,
+		"DB_PASSWORD":           cfg.DBPassword,
+		"DB_NAME":               cfg.DBName,
+		"R2_ACCOUNT_ID":         cfg.R2AccountId,
+		"R2_ACCESS_KEY_ID":      cfg.R2AccessKeyId,
+		"R2_SECRET_ACCESS_KEY":  cfg.R2SecretAccessKey,
+		"R2_BUCKET":             cfg.R2Bucket,
+		"R2_ENDPOINT":           cfg.R2Endpoint,
+		"R2_PUBLIC_URL":         cfg.R2PublicUrl,
 	}
 
 	for key, value := range required {

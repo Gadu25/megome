@@ -52,6 +52,11 @@ func WithJWTAuth(handlerFunc http.HandlerFunc, store user.UserStore) http.Handle
 		}
 
 		userID, err := strconv.Atoi(claims.UserID)
+		if err != nil {
+			log.Printf("invalid user id in token: %v", err)
+			permissionDenied(w, "invalid token")
+			return
+		}
 		u, err := store.GetUserByID(userID)
 		if err != nil {
 			log.Printf("failed to fetch user: %v", err)

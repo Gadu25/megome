@@ -47,8 +47,7 @@ func initStorage(db *sql.DB) {
 	err := db.PingContext(ctx)
 	if err != nil {
 		log.Println("WARNING: DB not ready:", err)
-	} else {
-		log.Println("DB connected")
+		return
 	}
 
 	log.Println("DB: Successfully connected!")

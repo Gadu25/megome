@@ -89,12 +89,12 @@ func (h *UserHandler) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := refreshtoken.AuthResponse{
-		Success:      true,
-		Message:      "Account was successfully logged in!",
-		AccessToken:  at,
-		RefreshToken: rt,
-	}
+	resp := refreshtoken.NewAuthResponse(
+		"Account was successfully logged in!",
+		at,
+		rt,
+		config.Envs.JWTExpirationInSeconds,
+	)
 	httputil.WriteJSON(w, http.StatusOK, resp)
 }
 
@@ -197,12 +197,12 @@ func (h *UserHandler) handleVerifyEmail(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	resp := refreshtoken.AuthResponse{
-		Success:      true,
-		Message:      "Email verified successfully",
-		AccessToken:  at,
-		RefreshToken: rt,
-	}
+	resp := refreshtoken.NewAuthResponse(
+		"Email verified successfully",
+		at,
+		rt,
+		config.Envs.JWTExpirationInSeconds,
+	)
 	httputil.WriteJSON(w, http.StatusOK, resp)
 }
 
@@ -530,10 +530,12 @@ func (h *UserHandler) handleGoogleCallback(
 		return
 	}
 	redirectURL := fmt.Sprintf(
-		"%s/auth/google/success?access_token=%s&refresh_token=%s",
+		"%s/auth/google/success?access_token=%s&refresh_token=%s&access_token_max_age=%d&refresh_token_max_age=%d",
 		config.Envs.FrontendUrl,
 		accessToken,
 		refreshToken,
+		config.Envs.JWTExpirationInSeconds,
+		refreshtoken.RefreshTokenMaxAgeSeconds,
 	)
 
 	http.Redirect(
